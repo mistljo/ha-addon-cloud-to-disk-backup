@@ -3,6 +3,7 @@
 # Cloud to Disk Backup - Watcher Service (v2.0)
 # Reads job configuration dynamically from /data/jobs.json
 # ==============================================================================
+set +e  # Disable errexit — watcher must keep running even if commands fail
 
 # Defaults for environment variables (in case contenv doesn't pass them)
 ADDON_JOBS_FILE="${ADDON_JOBS_FILE:-/data/jobs.json}"
