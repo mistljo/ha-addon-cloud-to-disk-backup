@@ -258,6 +258,15 @@
         .mt-16 { margin-top: 16px; }
         .mt-24 { margin-top: 24px; }
         .mb-8 { margin-bottom: 8px; }
+        .day-check {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 0.85em; color: var(--text); cursor: pointer;
+            padding: 4px 8px; background: var(--input-bg); border: 1px solid var(--border);
+            border-radius: 4px; user-select: none;
+        }
+        .day-check input:checked + span, .day-check:has(input:checked) {
+            background: var(--primary); border-color: var(--primary); color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -326,6 +335,31 @@
                 <label>Excludes (one pattern per line, optional)</label>
                 <textarea id="jobExcludes" rows="3" placeholder="Personal Vault/**&#10;*.tmp&#10;Pers*nlicher Tresor/**"></textarea>
             </div>
+
+            <h3 class="mt-16" style="margin-bottom:8px;">⏰ Schedule</h3>
+            <div class="form-group">
+                <label>Days</label>
+                <div id="jobDays" style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <label class="day-check"><input type="checkbox" value="1" checked> Mon</label>
+                    <label class="day-check"><input type="checkbox" value="2" checked> Tue</label>
+                    <label class="day-check"><input type="checkbox" value="3" checked> Wed</label>
+                    <label class="day-check"><input type="checkbox" value="4" checked> Thu</label>
+                    <label class="day-check"><input type="checkbox" value="5" checked> Fri</label>
+                    <label class="day-check"><input type="checkbox" value="6" checked> Sat</label>
+                    <label class="day-check"><input type="checkbox" value="0" checked> Sun</label>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Time</label>
+                    <input type="time" id="jobTime" value="02:00">
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <p class="hint">Backup runs automatically at this time on selected days.</p>
+                </div>
+            </div>
+
             <div class="actions">
                 <button type="button" class="btn btn-primary" onclick="saveJob()">💾 Save Job</button>
                 <button type="button" class="btn" onclick="cancelEdit()" id="cancelEditBtn" style="display:none">✖ Cancel</button>
@@ -677,6 +711,7 @@
                     <div class="info-row"><span class="info-label">Remote</span><span>${esc(j.remote_name)}</span></div>
                     <div class="info-row"><span class="info-label">Backup Path</span><span>${esc(j.backup_path)}</span></div>
                     <div class="info-row"><span class="info-label">Excludes</span><span>${(j.excludes || []).map(esc).join(', ') || 'none'}</span></div>
+                    <div class="info-row"><span class="info-label">Schedule</span><span>${formatSchedule(j)}</span></div>
                     <div class="actions">
                         <button class="btn btn-primary btn-small" onclick="editJob('${j.id}')">✏️ Edit</button>
                         <button class="btn btn-small" onclick="toggleJob('${j.id}', ${!j.enabled})">${j.enabled ? '⏸ Disable' : '▶ Enable'}</button>
@@ -736,6 +771,10 @@
             const selectPath = document.getElementById('jobPath').value;
             const backupPath = customPath || selectPath;
 
+            // Gather selected days
+            const dayChecks = document.querySelectorAll('#jobDays input[type=checkbox]');
+            const schedule_days = Array.from(dayChecks).filter(c => c.checked).map(c => parseInt(c.value));
+
             const data = {
                 name: document.getElementById('jobName').value.trim(),
                 cloud_provider: document.getElementById('jobProvider').value,
@@ -743,6 +782,8 @@
                 backup_path: backupPath,
                 excludes: document.getElementById('jobExcludes').value
                     .split('\n').filter(s => s.trim()),
+                schedule_time: document.getElementById('jobTime').value || '02:00',
+                schedule_days: schedule_days,
                 enabled: true
             };
             if (!data.name || !data.remote_name || !data.backup_path) {
@@ -788,6 +829,12 @@
                     pathCustom.value = '';
                 }
                 document.getElementById('jobExcludes').value = (job.excludes || []).join('\n');
+                // Schedule
+                document.getElementById('jobTime').value = job.schedule_time || '02:00';
+                const days = job.schedule_days || [0,1,2,3,4,5,6];
+                document.querySelectorAll('#jobDays input[type=checkbox]').forEach(cb => {
+                    cb.checked = days.includes(parseInt(cb.value));
+                });
                 document.getElementById('cancelEditBtn').style.display = 'inline';
                 document.getElementById('jobFormTitle').textContent = '✏️ Edit Backup Job';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -802,6 +849,8 @@
             document.getElementById('jobPath').value = '';
             document.getElementById('jobPathCustom').value = '';
             document.getElementById('jobExcludes').value = '';
+            document.getElementById('jobTime').value = '02:00';
+            document.querySelectorAll('#jobDays input[type=checkbox]').forEach(cb => cb.checked = true);
             document.getElementById('cancelEditBtn').style.display = 'none';
             document.getElementById('jobFormTitle').textContent = '➕ Add Backup Job';
         }
@@ -1089,6 +1138,18 @@
         // ================================================================
         // UTILITIES
         // ================================================================
+        const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const DAY_NAMES_DE = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+        function formatSchedule(job) {
+            const time = job.schedule_time || '02:00';
+            const days = job.schedule_days || [0,1,2,3,4,5,6];
+            if (days.length === 7) return `Daily at ${time}`;
+            if (days.length === 0) return 'No schedule';
+            const names = days.sort((a,b) => a-b).map(d => DAY_NAMES[d] || '?');
+            return `${names.join(', ')} at ${time}`;
+        }
+
         function esc(s) {
             if (!s) return '';
             const d = document.createElement('div');

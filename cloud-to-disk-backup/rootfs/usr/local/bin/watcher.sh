@@ -198,28 +198,38 @@ while true; do
     done
 
     # ------------------------------------------------------------------
-    # Cron schedule check (every 60 seconds)
+    # Per-job schedule check (every 60 seconds)
     # ------------------------------------------------------------------
     CURRENT_TIME=$(date +%s)
-    if [ "$ADDON_SCHEDULE_ENABLED" = "true" ] && [ $((CURRENT_TIME - LAST_CRON_CHECK)) -ge 60 ]; then
+    if [ $((CURRENT_TIME - LAST_CRON_CHECK)) -ge 60 ]; then
         LAST_CRON_CHECK=$CURRENT_TIME
 
-        CRON_MIN=$(echo "$ADDON_SCHEDULE_CRON" | awk '{print $1}')
-        CRON_HOUR=$(echo "$ADDON_SCHEDULE_CRON" | awk '{print $2}')
         CURRENT_HOUR=$(date +%-H)
         CURRENT_MIN=$(date +%-M)
+        CURRENT_DOW=$(date +%w)  # 0=Sunday, 1=Monday, ... 6=Saturday
 
-        if [ "$CURRENT_HOUR" = "$CRON_HOUR" ] && [ "$CURRENT_MIN" = "$CRON_MIN" ]; then
-            log "Scheduled backup time reached (${CRON_HOUR}:${CRON_MIN})"
+        for job_name in $(get_enabled_job_names); do
+            # Read per-job schedule_time (HH:MM) and schedule_days ([0,1,...,6])
+            sched_time=$(get_job_field "$job_name" "schedule_time")
+            sched_time="${sched_time:-02:00}"
+            sched_hour=$(echo "$sched_time" | cut -d: -f1 | sed 's/^0//')
+            sched_min=$(echo "$sched_time" | cut -d: -f2 | sed 's/^0//')
 
-            for job_name in $(get_enabled_job_names); do
+            # Check if today's day-of-week is in schedule_days
+            day_match=$(jq -r --arg n "$job_name" --arg d "$CURRENT_DOW" \
+                '.[] | select(.name == $n) | .schedule_days // [0,1,2,3,4,5,6] | map(tostring) | if index($d) then "yes" else "no" end' \
+                "$ADDON_JOBS_FILE" 2>/dev/null)
+            day_match="${day_match:-yes}"
+
+            if [ "$day_match" = "yes" ] && [ "$CURRENT_HOUR" = "$sched_hour" ] && [ "$CURRENT_MIN" = "$sched_min" ]; then
                 if ! is_backup_running "$job_name"; then
+                    log "Scheduled backup for ${job_name} (${sched_time}, DOW=${CURRENT_DOW})"
                     start_backup "$job_name" "SCHEDULED"
                 else
                     log "${job_name} - Already running, skipping scheduled start"
                 fi
-            done
-        fi
+            fi
+        done
     fi
 
     # ------------------------------------------------------------------

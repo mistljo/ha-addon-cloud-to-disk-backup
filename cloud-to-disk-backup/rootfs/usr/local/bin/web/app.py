@@ -332,6 +332,8 @@ def api_create_job():
         'remote_name': remote_name,
         'backup_path': backup_path,
         'excludes': [e.strip() for e in data.get('excludes', []) if e.strip()],
+        'schedule_time': data.get('schedule_time', '02:00'),
+        'schedule_days': data.get('schedule_days', [0, 1, 2, 3, 4, 5, 6]),
         'enabled': data.get('enabled', True),
         'created': datetime.now().isoformat()
     }
@@ -347,7 +349,8 @@ def api_update_job(job_id):
     for j in jobs:
         if j['id'] == job_id:
             for key in ['name', 'cloud_provider', 'remote_name',
-                        'backup_path', 'enabled']:
+                        'backup_path', 'enabled',
+                        'schedule_time', 'schedule_days']:
                 if key in data:
                     j[key] = data[key]
             if 'excludes' in data:

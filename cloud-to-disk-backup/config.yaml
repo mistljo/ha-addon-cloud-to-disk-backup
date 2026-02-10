@@ -1,7 +1,7 @@
 ---
 name: "Cloud to Disk Backup"
 description: "Backup cloud storage (OneDrive, Google Drive, Dropbox) to local disks. Configure backup jobs and cloud remotes entirely via the Web UI."
-version: "0.2.7"
+version: "0.2.8"
 slug: "cloud-to-disk-backup"
 url: "https://github.com/mistljo/ha-addon-cloud-to-disk-backup"
 arch:
