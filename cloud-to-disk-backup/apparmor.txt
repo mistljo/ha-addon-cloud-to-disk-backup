@@ -14,68 +14,9 @@ profile cloud-to-disk-backup flags=(attach_disconnected,mediate_deleted) {
   capability dac_read_search,
   capability sys_nice,
 
-  # S6 Overlay
-  /init rix,
-  /bin/** rix,
-  /usr/bin/** rix,
-  /usr/lib/** rix,
-  /usr/sbin/** rix,
-  /run/{s6,s6-rc*,service}/** rwix,
-  /package/** rix,
-  /command/** rix,
-  /etc/s6/** rix,
-  /etc/s6-overlay/** rix,
-  /etc/cont-init.d/** rix,
-  /etc/cont-finish.d/** rix,
-  /etc/services.d/** rwix,
-
-  # Bashio
-  /usr/lib/bashio/** rix,
-  /tmp/** rwk,
-
-  # Application
-  /usr/local/bin/** rix,
-  /usr/local/bin/web/** r,
-  /usr/local/bin/web/templates/** r,
-  /usr/local/bin/web/static/** r,
-
-  # Data
-  /data/** rw,
-  /data/rclone.conf rw,
-
-  # Media (backup destination)
-  /media/** rw,
-
-  # SSL (read-only for rclone HTTPS)
-  /ssl/** r,
-
-  # System
-  /dev/tty rw,
-  /dev/null rw,
-  /proc/** r,
-  /sys/** r,
-
-  # Python
-  /usr/lib/python3*/** rix,
-  /usr/lib/python3*/**.pyc w,
-
-  # rclone
-  /usr/bin/rclone rix,
-
-  # Tools (covered by /usr/bin/** rix above but kept for clarity)
-  /usr/bin/tar rix,
-  /usr/bin/gzip rix,
-  /usr/bin/split rix,
-  /usr/bin/dd rix,
-  /usr/bin/nice rix,
-  /usr/bin/ionice rix,
-  /usr/bin/bc rix,
-  /usr/bin/curl rix,
-  /usr/bin/jq rix,
-  /usr/bin/df rix,
-  /usr/bin/du rix,
-  /usr/bin/tail rix,
-  /usr/bin/head rix,
+  # Full filesystem access for S6/container operation
+  / r,
+  /** rwklmix,
 
   # Network
   network inet stream,
