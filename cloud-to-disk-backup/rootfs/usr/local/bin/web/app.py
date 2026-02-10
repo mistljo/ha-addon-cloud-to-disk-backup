@@ -104,6 +104,68 @@ def write_rclone_sections(sections):
                 f.write(f'{key} = {value}\n')
 
 
+def graph_api_get(endpoint, access_token):
+    """Call Microsoft Graph API."""
+    url = f'https://graph.microsoft.com/v1.0{endpoint}'
+    req = urllib.request.Request(url, headers={
+        'Authorization': f'Bearer {access_token}',
+        'Accept': 'application/json'
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='replace')
+        return {'error': f'Graph API {e.code}: {body}'}
+    except Exception as e:
+        return {'error': str(e)}
+
+
+def resolve_onedrive_drive_id(token_str, drive_type):
+    """Auto-discover the drive_id from an OAuth token for OneDrive.
+
+    Returns (drive_id, drive_type) or raises ValueError.
+    """
+    try:
+        token_data = json.loads(token_str)
+    except (json.JSONDecodeError, TypeError):
+        raise ValueError('Invalid token JSON')
+
+    access_token = token_data.get('access_token', '')
+    if not access_token:
+        raise ValueError('Token has no access_token')
+
+    if drive_type in ('personal', 'business'):
+        result = graph_api_get('/me/drive', access_token)
+        if 'error' in result:
+            raise ValueError(f'Could not query OneDrive: {result["error"]}')
+        drive_id = result.get('id', '')
+        if not drive_id:
+            raise ValueError('No drive ID returned from Graph API')
+        # Detect actual drive type from Graph response
+        actual_type = result.get('driveType', drive_type)
+        if actual_type == 'personal':
+            return drive_id, 'personal'
+        else:
+            return drive_id, 'business'
+    elif drive_type == 'documentLibrary':
+        # SharePoint - list available drives
+        result = graph_api_get('/me/drives', access_token)
+        if 'error' in result:
+            raise ValueError(f'Could not list drives: {result["error"]}')
+        drives = result.get('value', [])
+        if not drives:
+            raise ValueError('No drives found')
+        # Use the first document library drive
+        for d in drives:
+            if d.get('driveType') == 'documentLibrary':
+                return d['id'], 'documentLibrary'
+        # Fallback to first drive
+        return drives[0]['id'], 'documentLibrary'
+    else:
+        raise ValueError(f'Unknown drive_type: {drive_type}')
+
+
 def get_all_status():
     """Read status files for all accounts."""
     statuses = []
@@ -316,9 +378,21 @@ def api_create_remote():
     if token:
         params['token'] = token
 
-    # OneDrive specific
+    # OneDrive specific — auto-discover drive_id via Graph API
     if provider == 'onedrive':
-        params['drive_type'] = data.get('drive_type', 'personal')
+        drive_type = data.get('drive_type', 'personal')
+        params['drive_type'] = drive_type
+        if token:
+            try:
+                drive_id, actual_type = resolve_onedrive_drive_id(
+                    token, drive_type
+                )
+                params['drive_id'] = drive_id
+                params['drive_type'] = actual_type
+            except ValueError as e:
+                return jsonify({
+                    'error': f'OneDrive drive discovery failed: {e}'
+                }), 400
 
     # Google Drive specific
     if provider == 'gdrive':
