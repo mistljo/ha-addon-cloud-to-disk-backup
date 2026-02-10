@@ -15,8 +15,8 @@ profile cloud-to-disk-backup flags=(attach_disconnected,mediate_deleted) {
   capability sys_nice,
 
   # S6 Overlay
-  /init ix,
-  /bin/** ix,
+  /init rix,
+  /bin/** rix,
   /usr/bin/** ix,
   /usr/lib/** ix,
   /usr/sbin/** ix,
