@@ -28,34 +28,45 @@ bashio::log.info "Cloud to Disk Backup v2.0 starting..."
 
 # ==============================================================================
 # Export global configuration (from HA add-on settings)
+# Write to both environment AND s6 container env so child processes inherit them
 # ==============================================================================
-export ADDON_SCHEDULE_ENABLED=$(bashio::config 'schedule.enabled')
-export ADDON_SCHEDULE_CRON=$(bashio::config 'schedule.cron')
-export ADDON_MAX_ARCHIVES=$(bashio::config 'archive.max_archives')
-export ADDON_MAX_LOGS=$(bashio::config 'archive.max_logs')
-export ADDON_SPLIT_SIZE_MB=$(bashio::config 'archive.split_size_mb')
-export ADDON_COMPRESSION_LEVEL=$(bashio::config 'archive.compression_level')
-export ADDON_THROTTLE_AUTO=$(bashio::config 'throttle.auto_detect')
-export ADDON_SATA_CHUNK_MB=$(bashio::config 'throttle.sata_chunk_mb')
-export ADDON_SATA_PAUSE_SEC=$(bashio::config 'throttle.sata_pause_sec')
-export ADDON_USB_CHUNK_MB=$(bashio::config 'throttle.usb_chunk_mb')
-export ADDON_USB_PAUSE_SEC=$(bashio::config 'throttle.usb_pause_sec')
-export ADDON_DIRTY_RATIO=$(bashio::config 'advanced.dirty_ratio')
-export ADDON_DIRTY_BG_RATIO=$(bashio::config 'advanced.dirty_background_ratio')
-export ADDON_MAX_RETRIES=$(bashio::config 'advanced.max_retries')
-export ADDON_RCLONE_TRANSFERS=$(bashio::config 'advanced.rclone_transfers')
-export ADDON_RCLONE_CHECKERS=$(bashio::config 'advanced.rclone_checkers')
-export ADDON_RCLONE_CONF="$RCLONE_CONF"
-export ADDON_STATUS_DIR="$STATUS_DIR"
-export ADDON_RETRY_DIR="$RETRY_DIR"
-export ADDON_DATA_DIR="$DATA_DIR"
-export ADDON_JOBS_FILE="$JOBS_FILE"
+S6_ENVDIR="/var/run/s6/container_environment"
+mkdir -p "$S6_ENVDIR"
+
+set_env() {
+    local name="$1"
+    local value="$2"
+    export "$name=$value"
+    printf '%s' "$value" > "${S6_ENVDIR}/${name}"
+}
+
+set_env ADDON_SCHEDULE_ENABLED "$(bashio::config 'schedule.enabled')"
+set_env ADDON_SCHEDULE_CRON "$(bashio::config 'schedule.cron')"
+set_env ADDON_MAX_ARCHIVES "$(bashio::config 'archive.max_archives')"
+set_env ADDON_MAX_LOGS "$(bashio::config 'archive.max_logs')"
+set_env ADDON_SPLIT_SIZE_MB "$(bashio::config 'archive.split_size_mb')"
+set_env ADDON_COMPRESSION_LEVEL "$(bashio::config 'archive.compression_level')"
+set_env ADDON_THROTTLE_AUTO "$(bashio::config 'throttle.auto_detect')"
+set_env ADDON_SATA_CHUNK_MB "$(bashio::config 'throttle.sata_chunk_mb')"
+set_env ADDON_SATA_PAUSE_SEC "$(bashio::config 'throttle.sata_pause_sec')"
+set_env ADDON_USB_CHUNK_MB "$(bashio::config 'throttle.usb_chunk_mb')"
+set_env ADDON_USB_PAUSE_SEC "$(bashio::config 'throttle.usb_pause_sec')"
+set_env ADDON_DIRTY_RATIO "$(bashio::config 'advanced.dirty_ratio')"
+set_env ADDON_DIRTY_BG_RATIO "$(bashio::config 'advanced.dirty_background_ratio')"
+set_env ADDON_MAX_RETRIES "$(bashio::config 'advanced.max_retries')"
+set_env ADDON_RCLONE_TRANSFERS "$(bashio::config 'advanced.rclone_transfers')"
+set_env ADDON_RCLONE_CHECKERS "$(bashio::config 'advanced.rclone_checkers')"
+set_env ADDON_RCLONE_CONF "$RCLONE_CONF"
+set_env ADDON_STATUS_DIR "$STATUS_DIR"
+set_env ADDON_RETRY_DIR "$RETRY_DIR"
+set_env ADDON_DATA_DIR "$DATA_DIR"
+set_env ADDON_JOBS_FILE "$JOBS_FILE"
 
 # HA API access
 export SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN}"
 
 # Ingress path for Web UI
-export INGRESS_PATH="$(bashio::addon.ingress_entry)"
+set_env INGRESS_PATH "$(bashio::addon.ingress_entry)"
 
 # ==============================================================================
 # Start rclone RC daemon (internal API for remote management)

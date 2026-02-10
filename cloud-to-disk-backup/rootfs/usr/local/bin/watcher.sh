@@ -4,6 +4,18 @@
 # Reads job configuration dynamically from /data/jobs.json
 # ==============================================================================
 
+# Defaults for environment variables (in case contenv doesn't pass them)
+ADDON_JOBS_FILE="${ADDON_JOBS_FILE:-/data/jobs.json}"
+ADDON_DATA_DIR="${ADDON_DATA_DIR:-/data}"
+ADDON_STATUS_DIR="${ADDON_STATUS_DIR:-/data/status}"
+ADDON_RETRY_DIR="${ADDON_RETRY_DIR:-/data/retry}"
+ADDON_RCLONE_CONF="${ADDON_RCLONE_CONF:-/data/rclone.conf}"
+ADDON_MAX_RETRIES="${ADDON_MAX_RETRIES:-5}"
+ADDON_SCHEDULE_ENABLED="${ADDON_SCHEDULE_ENABLED:-true}"
+ADDON_SCHEDULE_CRON="${ADDON_SCHEDULE_CRON:-0 2 * * *}"
+ADDON_RCLONE_TRANSFERS="${ADDON_RCLONE_TRANSFERS:-4}"
+ADDON_RCLONE_CHECKERS="${ADDON_RCLONE_CHECKERS:-8}"
+
 LOOP_INTERVAL=5
 LOOP_COUNT=0
 
