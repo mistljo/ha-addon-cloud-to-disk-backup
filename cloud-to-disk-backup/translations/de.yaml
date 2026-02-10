@@ -1,15 +1,11 @@
 ---
 configuration:
-  accounts:
-    name: Konten
-    description: >-
-      Liste der Cloud-Speicher-Konten für das Backup. Jedes Konto benötigt
-      einen Namen, Cloud-Anbieter, rclone Remote-Name und lokalen Backup-Pfad.
   schedule:
     name: Zeitplan
     description: >-
-      Automatische Backup-Planung. Wenn aktiviert, werden Backups nach dem
-      konfigurierten Cron-Zeitplan ausgeführt.
+      Automatische Backup-Planung. Wenn aktiviert, werden alle aktiven
+      Backup-Jobs nach dem konfigurierten Cron-Zeitplan ausgeführt.
+      Jobs werden über die Web-Oberfläche verwaltet.
   archive:
     name: Archiv
     description: >-

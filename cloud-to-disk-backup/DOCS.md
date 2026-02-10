@@ -7,56 +7,82 @@ This Home Assistant add-on backs up cloud storage accounts to local disks. It us
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│  Home Assistant Add-on Container        │
-│                                         │
-│  ┌──────────┐  ┌─────────────────────┐  │
-│  │ Flask UI │  │ Watcher (watcher.sh)│  │
-│  │ Port 8099│  │  - Cron scheduling  │  │
-│  │ Ingress  │  │  - Crash detection  │  │
-│  └──────────┘  │  - Auto-resume      │  │
-│                └────────┬────────────┘  │
-│                         │               │
-│                ┌────────▼────────────┐  │
-│                │ Backup (backup.sh)  │  │
-│                │  Phase 1: Sync      │  │
-│                │  Phase 2: Archive   │  │
-│                │  Phase 3: Cleanup   │  │
-│                └────────┬────────────┘  │
-│                         │               │
-│  ┌──────────┐  ┌───────▼─────────┐     │
-│  │ rclone   │  │ Throttled I/O   │     │
-│  │ config   │  │ dd+gzip+split   │     │
-│  └──────────┘  └─────────────────┘     │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│  Home Assistant Add-on Container             │
+│                                              │
+│  ┌──────────────┐  ┌──────────────────────┐  │
+│  │  Flask UI    │  │ Watcher (watcher.sh) │  │
+│  │  Port 8099   │  │  - Reads jobs.json   │  │
+│  │  Ingress     │  │  - Cron scheduling   │  │
+│  │  - Dashboard │  │  - Crash detection   │  │
+│  │  - Jobs CRUD │  │  - Auto-resume       │  │
+│  │  - Remotes   │  └────────┬─────────────┘  │
+│  │  - Logs      │           │                │
+│  └──────┬───────┘  ┌────────▼────────────┐   │
+│         │          │ Backup (backup.sh)   │   │
+│  ┌──────▼───────┐  │  Phase 1: Sync      │   │
+│  │ rclone RCD   │  │  Phase 2: Archive   │   │
+│  │ RC API :5572 │  │  Phase 3: Cleanup   │   │
+│  └──────────────┘  └────────┬────────────┘   │
+│                             │                │
+│  /data/jobs.json   ┌───────▼─────────┐       │
+│  /data/rclone.conf │ Throttled I/O   │       │
+│                    │ dd+gzip+split   │       │
+│                    └─────────────────┘       │
+└──────────────────────────────────────────────┘
           │                    │
      Cloud APIs          Local Disk
    (OneDrive, etc.)    (/media/...)
 ```
 
-## Detailed Configuration
+**Key change in v2.0:** Backup jobs and cloud remotes are configured
+entirely via the Web UI. No more editing `config.yaml` for accounts.
 
-### Account Configuration
+## Getting Started
 
-Each account entry defines one cloud storage backup job:
+### 1. Install the Add-on
 
-```yaml
-accounts:
-  - name: "my_onedrive"
-    cloud_provider: "onedrive"
-    remote_name: "onedrive_remote"
-    backup_path: "/media/backup_disk"
-    excludes:
-      - "Pers*nlicher Tresor/**"
-      - ".tmp/**"
-      - "*.partial"
-```
+Add `https://github.com/mistljo/ha-addon-cloud-to-disk-backup` as a
+repository in Home Assistant (Settings → Add-ons → Store → ⋮ → Repositories).
+Then install **Cloud to Disk Backup** and start it.
+
+### 2. Configure Cloud Remotes (Web UI → Cloud Remotes tab)
+
+1. Open the add-on via the sidebar ("Cloud Backup")
+2. Go to the **Cloud Remotes** tab
+3. Select your provider (OneDrive, Google Drive, Dropbox, …)
+4. On your **local PC**, run `rclone authorize "onedrive"` (or the displayed command)
+5. Complete the OAuth login in your browser
+6. Copy the JSON token from the terminal output
+7. Paste the token into the Web UI and click **Create Remote**
+8. Click **Test Connection** to verify
+
+**Alternative:** If you already have a working `rclone.conf`, you can
+paste its contents in the "Advanced: Import rclone.conf" section.
+
+### 3. Create Backup Jobs (Web UI → Backup Jobs tab)
+
+1. Go to the **Backup Jobs** tab
+2. Fill in the form:
+   - **Job Name** — unique identifier (e.g., "My OneDrive")
+   - **Cloud Provider** — matches your remote type
+   - **rclone Remote** — select the remote you created in step 2
+   - **Backup Path** — target directory on a mounted disk (e.g., `/media/Backup_Disk/backups`)
+   - **Excludes** — optional rclone filter patterns, one per line
+3. Click **Save Job**
+
+Jobs are stored in `/data/jobs.json` and persist across restarts.
 
 **Notes:**
-- `name` must be unique across all accounts and is used for directory names, logs, and status files
-- `remote_name` must match a configured rclone remote (set up via Web UI or manually in `/data/rclone.conf`)
-- `backup_path` should point to a mounted external disk under `/media/`
-- `excludes` supports rclone filter patterns (globs, double-star wildcards)
+- Job names must be unique (used for directory names, logs, and status files)
+- The rclone remote must match a configured remote from the Cloud Remotes tab
+- Backup paths should point to a mounted external disk under `/media/`
+- Excludes support rclone filter patterns (globs, `**` wildcards)
+
+## Detailed Configuration
+
+Global settings are configured via the HA add-on configuration panel
+(not the Web UI). They apply to all backup jobs.
 
 ### Throttle Configuration
 

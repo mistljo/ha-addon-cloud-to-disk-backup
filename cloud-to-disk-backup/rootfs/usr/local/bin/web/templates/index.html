@@ -15,6 +15,7 @@
             --text: #e0e0e0;
             --text-dim: #888;
             --border: #444;
+            --input-bg: #1a1a1a;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -26,7 +27,18 @@
         }
         h1 { font-size: 1.4em; margin-bottom: 16px; color: var(--primary); }
         h2 { font-size: 1.1em; margin-bottom: 12px; color: var(--text); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        h3 { font-size: 0.95em; }
+        .hint { font-size: 0.85em; color: var(--text-dim); margin-bottom: 12px; }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* Cards */
         .card {
             background: var(--card-bg);
             border-radius: 8px;
@@ -39,7 +51,8 @@
             align-items: center;
             margin-bottom: 12px;
         }
-        .card-header h3 { font-size: 1em; }
+
+        /* Badges */
         .badge {
             padding: 2px 8px;
             border-radius: 12px;
@@ -49,9 +62,11 @@
         }
         .badge-running { background: var(--primary); color: #fff; }
         .badge-completed { background: var(--success); color: #fff; }
-        .badge-error { background: var(--error); color: #fff; }
+        .badge-error, .badge-failed { background: var(--error); color: #fff; }
         .badge-idle { background: var(--border); color: var(--text); }
         .badge-unknown { background: var(--text-dim); color: #fff; }
+
+        /* Progress */
         .progress-bar {
             width: 100%;
             height: 6px;
@@ -68,10 +83,18 @@
         }
         .progress-fill.complete { background: var(--success); }
         .progress-fill.error { background: var(--error); }
-        .info-row { display: flex; justify-content: space-between; font-size: 0.85em; margin: 4px 0; }
+
+        /* Info rows */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            margin: 4px 0;
+        }
         .info-label { color: var(--text-dim); }
-        .info-value { color: var(--text); }
-        .disk-card .disk-bar {
+
+        /* Disk */
+        .disk-bar {
             width: 100%;
             height: 20px;
             background: var(--border);
@@ -86,30 +109,34 @@
         }
         .disk-fill.warn { background: var(--warning); }
         .disk-fill.critical { background: var(--error); }
-        .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
         .tab {
-            padding: 6px 16px;
+            padding: 8px 16px;
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 4px 4px 0 0;
             cursor: pointer;
             font-size: 0.85em;
             color: var(--text-dim);
+            user-select: none;
         }
-        .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .log-viewer {
-            background: #111;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 12px;
-            font-family: 'Cascadia Code', 'Fira Code', monospace;
-            font-size: 0.8em;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
-            line-height: 1.6;
+        .tab:hover { color: var(--text); }
+        .tab.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
         }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Buttons */
         .btn {
             padding: 6px 16px;
             border: none;
@@ -117,25 +144,100 @@
             cursor: pointer;
             font-size: 0.85em;
             font-weight: 500;
+            color: var(--text);
+            background: var(--border);
         }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-success { background: var(--success); color: #fff; }
         .btn-danger { background: var(--error); color: #fff; }
         .btn-small { padding: 4px 10px; font-size: 0.75em; }
         .btn:hover { opacity: 0.85; }
-        .actions { display: flex; gap: 8px; margin-top: 8px; }
-        .setup-section { margin-top: 24px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+        /* Forms */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
         .form-group { margin: 8px 0; }
-        .form-group label { display: block; font-size: 0.85em; color: var(--text-dim); margin-bottom: 4px; }
-        .form-group select, .form-group input {
+        .form-group label {
+            display: block;
+            font-size: 0.85em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
-            padding: 6px 10px;
-            background: var(--bg);
+            padding: 8px 10px;
+            background: var(--input-bg);
             border: 1px solid var(--border);
             border-radius: 4px;
             color: var(--text);
             font-size: 0.9em;
+            font-family: inherit;
         }
+        .form-group textarea {
+            resize: vertical;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.85em;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Code block */
+        .code-block {
+            display: block;
+            background: #111;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.85em;
+            color: var(--success);
+            margin: 8px 0;
+            cursor: pointer;
+            user-select: all;
+            word-break: break-all;
+        }
+
+        /* Log viewer */
+        .log-viewer {
+            background: #111;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.8em;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+
+        /* Auth instructions card */
+        .auth-card {
+            background: #1a1a2e;
+            border: 1px solid #333366;
+            border-radius: 6px;
+            padding: 14px;
+            margin: 12px 0;
+        }
+        .auth-card h3 { font-size: 0.9em; margin-bottom: 8px; color: var(--primary); }
+        .auth-card p { font-size: 0.85em; margin: 4px 0; }
+
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 20px;
@@ -146,151 +248,599 @@
             opacity: 0;
             transition: opacity 0.3s;
             z-index: 1000;
+            max-width: 400px;
         }
         .toast.show { opacity: 1; }
         .toast-success { background: var(--success); color: #fff; }
         .toast-error { background: var(--error); color: #fff; }
+
         .refresh-info { font-size: 0.75em; color: var(--text-dim); float: right; }
+        .mt-16 { margin-top: 16px; }
+        .mt-24 { margin-top: 24px; }
+        .mb-8 { margin-bottom: 8px; }
     </style>
 </head>
 <body>
     <h1>☁️ Cloud to Disk Backup <span class="refresh-info" id="lastUpdate"></span></h1>
 
-    <!-- Status Cards -->
-    <div class="grid" id="statusGrid"></div>
-
-    <!-- Disk Info -->
-    <div class="card disk-card" id="diskCard" style="margin-bottom: 24px;"></div>
-
-    <!-- Tabs -->
+    <!-- Navigation Tabs -->
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('logs')">📋 Logs</div>
-        <div class="tab" onclick="switchTab('setup')">⚙️ Setup</div>
+        <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</div>
+        <div class="tab" data-tab="jobs" onclick="switchTab('jobs')">📋 Backup Jobs</div>
+        <div class="tab" data-tab="remotes" onclick="switchTab('remotes')">☁️ Cloud Remotes</div>
+        <div class="tab" data-tab="logs" onclick="switchTab('logs')">📜 Logs</div>
     </div>
 
-    <!-- Log Viewer -->
-    <div id="tab-logs">
+    <!-- ================================================================ -->
+    <!-- DASHBOARD TAB -->
+    <!-- ================================================================ -->
+    <div id="tab-dashboard" class="tab-content active">
+        <div class="grid" id="statusGrid">
+            <div class="card"><p class="hint">Loading...</p></div>
+        </div>
+        <div id="diskCards"></div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- BACKUP JOBS TAB -->
+    <!-- ================================================================ -->
+    <div id="tab-jobs" class="tab-content">
+        <div class="card">
+            <h2 id="jobFormTitle">➕ Add Backup Job</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Job Name *</label>
+                    <input type="text" id="jobName" placeholder="e.g., My OneDrive">
+                </div>
+                <div class="form-group">
+                    <label>Cloud Provider</label>
+                    <select id="jobProvider">
+                        <option value="onedrive">Microsoft OneDrive</option>
+                        <option value="gdrive">Google Drive</option>
+                        <option value="dropbox">Dropbox</option>
+                        <option value="s3">Amazon S3</option>
+                        <option value="sftp">SFTP</option>
+                        <option value="webdav">WebDAV</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>rclone Remote *</label>
+                    <select id="jobRemote">
+                        <option value="">-- Loading remotes... --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Backup Destination Path *</label>
+                    <input type="text" id="jobPath" placeholder="/media/Backup_Disk/backups">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Excludes (one pattern per line, optional)</label>
+                <textarea id="jobExcludes" rows="3" placeholder="Personal Vault/**&#10;*.tmp&#10;Pers*nlicher Tresor/**"></textarea>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn btn-primary" onclick="saveJob()">💾 Save Job</button>
+                <button type="button" class="btn" onclick="cancelEdit()" id="cancelEditBtn" style="display:none">✖ Cancel</button>
+            </div>
+        </div>
+
+        <h2 class="mt-24">Configured Backup Jobs</h2>
+        <div id="jobsList"><p class="hint">Loading...</p></div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- CLOUD REMOTES TAB -->
+    <!-- ================================================================ -->
+    <div id="tab-remotes" class="tab-content">
+        <div class="card">
+            <h2>➕ Add Cloud Remote</h2>
+            <p class="hint">Set up a new rclone remote to connect your cloud storage.</p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Provider</label>
+                    <select id="remoteProvider" onchange="updateAuthInstructions()">
+                        <option value="onedrive">Microsoft OneDrive</option>
+                        <option value="gdrive">Google Drive</option>
+                        <option value="dropbox">Dropbox</option>
+                        <option value="s3">Amazon S3</option>
+                        <option value="sftp">SFTP</option>
+                        <option value="webdav">WebDAV</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Remote Name *</label>
+                    <input type="text" id="remoteName" placeholder="e.g., my_onedrive">
+                </div>
+            </div>
+
+            <div class="auth-card" id="authInstructions">
+                <h3>🔑 Authentication (OAuth Providers)</h3>
+                <p>1. Install <a href="https://rclone.org/downloads/" target="_blank" style="color:var(--primary)">rclone</a> on your <strong>local PC</strong>.</p>
+                <p>2. Run this command:</p>
+                <code class="code-block" id="authCommand" onclick="copyAuthCommand()">rclone authorize "onedrive"</code>
+                <p>3. Complete the login in your browser.</p>
+                <p>4. Copy the <strong>token JSON</strong> from the terminal output and paste it below.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Token (paste from rclone authorize output)</label>
+                <textarea id="remoteToken" rows="4" placeholder='Paste the full JSON token here, e.g.:&#10;{"access_token":"...","token_type":"Bearer","refresh_token":"...","expiry":"..."}'></textarea>
+            </div>
+
+            <div class="form-group" id="driveTypeGroup">
+                <label>OneDrive Drive Type</label>
+                <select id="remoteDriveType">
+                    <option value="personal">Personal</option>
+                    <option value="business">Business / OneDrive for Business</option>
+                    <option value="documentLibrary">SharePoint Document Library</option>
+                </select>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="createRemote()">☁️ Create Remote</button>
+            </div>
+        </div>
+
+        <!-- Advanced: Import config -->
+        <div class="card mt-16">
+            <h2>📄 Advanced: Import rclone.conf</h2>
+            <p class="hint">Paste a complete rclone.conf file. This replaces the current config (a backup is created automatically).</p>
+            <div class="form-group">
+                <label>Current rclone.conf (tokens redacted)</label>
+                <textarea id="rcloneConfigDisplay" rows="5" readonly
+                    style="font-family:monospace; background:#111; color:var(--text-dim);"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Paste new rclone.conf content</label>
+                <textarea id="rcloneConfigUpload" rows="6"
+                    placeholder="[my_remote]&#10;type = onedrive&#10;token = {&quot;access_token&quot;:&quot;...&quot;}&#10;drive_type = personal"></textarea>
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="uploadConfig()">📤 Upload Config</button>
+            </div>
+        </div>
+
+        <h2 class="mt-24">Configured Remotes</h2>
+        <div id="remotesList"><p class="hint">Loading...</p></div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- LOGS TAB -->
+    <!-- ================================================================ -->
+    <div id="tab-logs" class="tab-content">
         <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-            <select id="logSelect" onchange="loadLog()" style="flex:1; padding:6px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+            <select id="logSelect" onchange="loadLog()"
+                style="flex:1; padding:8px; background:var(--input-bg); border:1px solid var(--border); border-radius:4px; color:var(--text);">
                 <option value="">Select log file...</option>
             </select>
-            <button class="btn btn-primary btn-small" onclick="toggleLiveLog()">▶ Live</button>
+            <button class="btn btn-primary btn-small" onclick="toggleLiveLog()" id="liveBtn">▶ Live</button>
         </div>
         <div class="log-viewer" id="logContent">Select a log file to view...</div>
     </div>
 
-    <!-- Setup -->
-    <div id="tab-setup" style="display:none;">
-        <div class="card">
-            <h2>rclone Remote Setup</h2>
-            <p style="font-size:0.85em; color:var(--text-dim); margin-bottom:12px;">
-                Configure cloud storage remotes. Each account needs a configured rclone remote.
-            </p>
-            <div class="form-group">
-                <label>Cloud Provider</label>
-                <select id="setupProvider">
-                    <option value="onedrive">Microsoft OneDrive</option>
-                    <option value="gdrive">Google Drive</option>
-                    <option value="dropbox">Dropbox</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Remote Name</label>
-                <input type="text" id="setupRemoteName" placeholder="e.g., my_onedrive">
-            </div>
-            <div class="actions">
-                <button class="btn btn-primary" onclick="createRemote()">Create Remote</button>
-            </div>
-            <div id="setupOutput" style="margin-top:12px;"></div>
-
-            <h2 style="margin-top:24px;">Configured Remotes</h2>
-            <div id="remotesList" style="font-size:0.9em; color:var(--text-dim);">Loading...</div>
-        </div>
-    </div>
-
+    <!-- Toast notification -->
     <div class="toast" id="toast"></div>
 
+    <!-- ================================================================ -->
+    <!-- JAVASCRIPT -->
+    <!-- ================================================================ -->
     <script>
         const BASE = '{{ ingress_path }}';
         let liveLogSource = null;
-        let refreshInterval = null;
+        let editingJobId = null;
+        let refreshTimer = null;
 
         function api(path) { return `${BASE}/api${path}`; }
 
-        function showToast(msg, type='success') {
+        function showToast(msg, type = 'success') {
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.className = `toast toast-${type} show`;
-            setTimeout(() => t.className = 'toast', 3000);
+            setTimeout(() => t.className = 'toast', 4000);
         }
 
-        function badgeClass(status) {
-            const map = { running: 'badge-running', completed: 'badge-completed', error: 'badge-error', idle: 'badge-idle' };
-            return map[status] || 'badge-unknown';
+        // ================================================================
+        // TAB MANAGEMENT
+        // ================================================================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            if (tab === 'dashboard') refreshDashboard();
+            if (tab === 'jobs') { loadRemotesForSelect(); loadJobs(); }
+            if (tab === 'remotes') { loadRemotes(); loadRcloneConfig(); updateAuthInstructions(); }
+            if (tab === 'logs') loadLogList();
         }
 
-        function renderStatus(accounts, disk) {
+        // ================================================================
+        // DASHBOARD
+        // ================================================================
+        function badgeClass(s) {
+            return {
+                running: 'badge-running', completed: 'badge-completed',
+                error: 'badge-error', failed: 'badge-failed',
+                idle: 'badge-idle'
+            }[s] || 'badge-unknown';
+        }
+
+        async function refreshDashboard() {
+            try {
+                const res = await fetch(api('/status'));
+                const data = await res.json();
+                renderStatusCards(data.accounts);
+                renderDiskCards(data.disks || []);
+                document.getElementById('lastUpdate').textContent =
+                    `Updated: ${new Date().toLocaleTimeString()}`;
+            } catch (e) { console.error('Dashboard refresh error:', e); }
+        }
+
+        function renderStatusCards(accounts) {
             const grid = document.getElementById('statusGrid');
             if (!accounts.length) {
-                grid.innerHTML = '<div class="card"><p style="color:var(--text-dim)">No backup accounts configured. Add accounts in the add-on configuration.</p></div>';
+                grid.innerHTML = `<div class="card">
+                    <p class="hint">No backup jobs running yet.<br>
+                    Go to <strong>Backup Jobs</strong> to create one, then to
+                    <strong>Cloud Remotes</strong> to configure your cloud access.</p>
+                </div>`;
                 return;
             }
             grid.innerHTML = accounts.map(a => {
-                const progress = a.progress || 0;
-                const fillClass = a.status === 'completed' ? 'complete' : a.status === 'error' ? 'error' : '';
-                return `
-                <div class="card">
+                const p = a.progress || 0;
+                const cls = a.status === 'completed' ? 'complete' :
+                            (a.status === 'error' || a.status === 'failed') ? 'error' : '';
+                return `<div class="card">
                     <div class="card-header">
-                        <h3>👤 ${a.account || 'Unknown'}</h3>
+                        <h3>${a.account || '?'}</h3>
                         <span class="badge ${badgeClass(a.status)}">${a.status || 'unknown'}</span>
                     </div>
-                    <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${progress}%"></div></div>
-                    <div class="info-row"><span class="info-label">Stage</span><span class="info-value">${a.stage || '-'} ${a.stage_number ? `(${a.stage_number}/3)` : ''}</span></div>
-                    <div class="info-row"><span class="info-label">Message</span><span class="info-value">${a.message || '-'}</span></div>
-                    <div class="info-row"><span class="info-label">Speed</span><span class="info-value">${a.speed_mbps ? a.speed_mbps + ' MB/s' : '-'}</span></div>
-                    <div class="info-row"><span class="info-label">Retries</span><span class="info-value">${a.retry_count !== undefined ? a.retry_count : '-'}</span></div>
-                    <div class="info-row"><span class="info-label">Updated</span><span class="info-value">${a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '-'}</span></div>
+                    <div class="progress-bar"><div class="progress-fill ${cls}" style="width:${p}%"></div></div>
+                    <div class="info-row"><span class="info-label">Stage</span><span>${a.stage || '-'} ${a.stage_number ? '(' + a.stage_number + '/3)' : ''}</span></div>
+                    <div class="info-row"><span class="info-label">Message</span><span>${a.message || '-'}</span></div>
+                    <div class="info-row"><span class="info-label">Speed</span><span>${a.speed_mbps ? a.speed_mbps + ' MB/s' : '-'}</span></div>
+                    <div class="info-row"><span class="info-label">Retries</span><span>${a.retry_count !== undefined ? a.retry_count : '-'}</span></div>
+                    <div class="info-row"><span class="info-label">Updated</span><span>${a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '-'}</span></div>
                     <div class="actions">
                         <button class="btn btn-primary btn-small" onclick="triggerBackup('${a.account}')">▶ Run Now</button>
                     </div>
                 </div>`;
             }).join('');
-
-            // Disk card
-            const dc = document.getElementById('diskCard');
-            const pct = parseInt(disk.percent) || 0;
-            const fillCls = pct > 90 ? 'critical' : pct > 75 ? 'warn' : '';
-            dc.innerHTML = `
-                <h2>💾 Disk Usage</h2>
-                <div class="disk-bar"><div class="disk-fill ${fillCls}" style="width:${pct}%"></div></div>
-                <div class="info-row"><span class="info-label">Used</span><span class="info-value">${disk.used} / ${disk.total} (${disk.percent})</span></div>
-                <div class="info-row"><span class="info-label">Available</span><span class="info-value">${disk.available}</span></div>`;
         }
 
-        async function refresh() {
+        function renderDiskCards(disks) {
+            const el = document.getElementById('diskCards');
+            if (!disks.length) { el.innerHTML = ''; return; }
+            el.innerHTML = disks.map(d => {
+                const pct = parseInt(d.percent) || 0;
+                const cls = pct > 90 ? 'critical' : pct > 75 ? 'warn' : '';
+                return `<div class="card mt-16">
+                    <h2>💾 ${d.path}</h2>
+                    <div class="disk-bar"><div class="disk-fill ${cls}" style="width:${pct}%"></div></div>
+                    <div class="info-row"><span class="info-label">Used</span><span>${d.used} / ${d.total} (${d.percent})</span></div>
+                    <div class="info-row"><span class="info-label">Available</span><span>${d.available}</span></div>
+                </div>`;
+            }).join('');
+        }
+
+        async function triggerBackup(name) {
             try {
-                const res = await fetch(api('/status'));
+                const res = await fetch(api('/trigger'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
                 const data = await res.json();
-                renderStatus(data.accounts, data.disk);
-                document.getElementById('lastUpdate').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
-            } catch(e) {
-                console.error('Refresh error:', e);
-            }
+                showToast(
+                    data.success ? data.message : (data.error || 'Failed'),
+                    data.success ? 'success' : 'error'
+                );
+            } catch (e) { showToast('Error: ' + e, 'error'); }
         }
 
+        // ================================================================
+        // BACKUP JOBS
+        // ================================================================
+        async function loadJobs() {
+            try {
+                const res = await fetch(api('/jobs'));
+                const data = await res.json();
+                renderJobsList(data.jobs || []);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderJobsList(jobs) {
+            const el = document.getElementById('jobsList');
+            if (!jobs.length) {
+                el.innerHTML = '<div class="card"><p class="hint">No backup jobs configured yet. Use the form above to add one.</p></div>';
+                return;
+            }
+            el.innerHTML = jobs.map(j => `
+                <div class="card mb-8">
+                    <div class="card-header">
+                        <h3>${esc(j.name)} <span style="font-size:0.75em; color:var(--text-dim)">(${esc(j.cloud_provider)})</span></h3>
+                        <span class="badge ${j.enabled ? 'badge-completed' : 'badge-idle'}">${j.enabled ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                    <div class="info-row"><span class="info-label">Remote</span><span>${esc(j.remote_name)}</span></div>
+                    <div class="info-row"><span class="info-label">Backup Path</span><span>${esc(j.backup_path)}</span></div>
+                    <div class="info-row"><span class="info-label">Excludes</span><span>${(j.excludes || []).map(esc).join(', ') || 'none'}</span></div>
+                    <div class="actions">
+                        <button class="btn btn-primary btn-small" onclick="editJob('${j.id}')">✏️ Edit</button>
+                        <button class="btn btn-small" onclick="toggleJob('${j.id}', ${!j.enabled})">${j.enabled ? '⏸ Disable' : '▶ Enable'}</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteJob('${j.id}', '${esc(j.name)}')">🗑 Delete</button>
+                        <button class="btn btn-primary btn-small" onclick="triggerBackup('${esc(j.name)}')">▶ Run Now</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadRemotesForSelect() {
+            try {
+                const res = await fetch(api('/remotes'));
+                const data = await res.json();
+                const sel = document.getElementById('jobRemote');
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">-- Select remote --</option>';
+                (data.remotes || []).forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.name;
+                    opt.textContent = `${r.name} (${r.type})`;
+                    sel.appendChild(opt);
+                });
+                if (currentVal) sel.value = currentVal;
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveJob() {
+            const data = {
+                name: document.getElementById('jobName').value.trim(),
+                cloud_provider: document.getElementById('jobProvider').value,
+                remote_name: document.getElementById('jobRemote').value,
+                backup_path: document.getElementById('jobPath').value.trim(),
+                excludes: document.getElementById('jobExcludes').value
+                    .split('\n').filter(s => s.trim()),
+                enabled: true
+            };
+            if (!data.name || !data.remote_name || !data.backup_path) {
+                showToast('Please fill in all required fields (*)', 'error');
+                return;
+            }
+            try {
+                const url = editingJobId ? api(`/jobs/${editingJobId}`) : api('/jobs');
+                const method = editingJobId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method, headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(editingJobId ? 'Job updated!' : 'Job created!');
+                    cancelEdit();
+                    loadJobs();
+                } else {
+                    showToast(result.error || 'Failed', 'error');
+                }
+            } catch (e) { showToast('Error: ' + e, 'error'); }
+        }
+
+        async function editJob(id) {
+            try {
+                const res = await fetch(api('/jobs'));
+                const data = await res.json();
+                const job = (data.jobs || []).find(j => j.id === id);
+                if (!job) return;
+                editingJobId = id;
+                document.getElementById('jobName').value = job.name;
+                document.getElementById('jobProvider').value = job.cloud_provider;
+                document.getElementById('jobRemote').value = job.remote_name;
+                document.getElementById('jobPath').value = job.backup_path;
+                document.getElementById('jobExcludes').value = (job.excludes || []).join('\n');
+                document.getElementById('cancelEditBtn').style.display = 'inline';
+                document.getElementById('jobFormTitle').textContent = '✏️ Edit Backup Job';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) { console.error(e); }
+        }
+
+        function cancelEdit() {
+            editingJobId = null;
+            document.getElementById('jobName').value = '';
+            document.getElementById('jobProvider').value = 'onedrive';
+            document.getElementById('jobRemote').value = '';
+            document.getElementById('jobPath').value = '';
+            document.getElementById('jobExcludes').value = '';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('jobFormTitle').textContent = '➕ Add Backup Job';
+        }
+
+        async function toggleJob(id, enabled) {
+            try {
+                const res = await fetch(api(`/jobs/${id}`), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(enabled ? 'Job enabled' : 'Job disabled');
+                    loadJobs();
+                }
+            } catch (e) { showToast('Error: ' + e, 'error'); }
+        }
+
+        async function deleteJob(id, name) {
+            if (!confirm(`Delete backup job "${name}"? This cannot be undone.`)) return;
+            try {
+                const res = await fetch(api(`/jobs/${id}`), { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) { showToast('Job deleted'); loadJobs(); }
+            } catch (e) { showToast('Error: ' + e, 'error'); }
+        }
+
+        // ================================================================
+        // CLOUD REMOTES
+        // ================================================================
+        const PROVIDER_RCLONE_MAP = {
+            onedrive: 'onedrive', gdrive: 'drive', dropbox: 'dropbox',
+            s3: null, sftp: null, webdav: null
+        };
+
+        function updateAuthInstructions() {
+            const provider = document.getElementById('remoteProvider').value;
+            const rtype = PROVIDER_RCLONE_MAP[provider];
+            const authEl = document.getElementById('authInstructions');
+            const cmdEl = document.getElementById('authCommand');
+            const dtEl = document.getElementById('driveTypeGroup');
+
+            if (rtype) {
+                authEl.style.display = 'block';
+                cmdEl.textContent = `rclone authorize "${rtype}"`;
+            } else {
+                authEl.style.display = 'none';
+            }
+            dtEl.style.display = provider === 'onedrive' ? 'block' : 'none';
+        }
+
+        function copyAuthCommand() {
+            const cmd = document.getElementById('authCommand').textContent;
+            navigator.clipboard.writeText(cmd).then(
+                () => showToast('Command copied!'),
+                () => {}
+            );
+        }
+
+        async function loadRemotes() {
+            try {
+                const res = await fetch(api('/remotes'));
+                const data = await res.json();
+                const el = document.getElementById('remotesList');
+                const remotes = data.remotes || [];
+                if (!remotes.length) {
+                    el.innerHTML = '<div class="card"><p class="hint">No remotes configured. Use the form above or import a rclone.conf.</p></div>';
+                    return;
+                }
+                el.innerHTML = remotes.map(r => `
+                    <div class="card mb-8">
+                        <div class="card-header">
+                            <h3>☁️ ${esc(r.name)}</h3>
+                            <span class="badge badge-idle">${esc(r.type)}</span>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-primary btn-small" onclick="testRemote('${esc(r.name)}')">🔍 Test Connection</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteRemote('${esc(r.name)}')">🗑 Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadRcloneConfig() {
+            try {
+                const res = await fetch(api('/rclone-config'));
+                const data = await res.json();
+                document.getElementById('rcloneConfigDisplay').value = data.content || '(empty)';
+            } catch (e) { console.error(e); }
+        }
+
+        async function createRemote() {
+            const name = document.getElementById('remoteName').value.trim();
+            const provider = document.getElementById('remoteProvider').value;
+            const token = document.getElementById('remoteToken').value.trim();
+            const driveType = document.getElementById('remoteDriveType').value;
+
+            if (!name) { showToast('Enter a remote name', 'error'); return; }
+
+            const body = { name, provider, token };
+            if (provider === 'onedrive') body.drive_type = driveType;
+
+            try {
+                const res = await fetch(api('/remotes'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message);
+                    document.getElementById('remoteName').value = '';
+                    document.getElementById('remoteToken').value = '';
+                    loadRemotes();
+                    loadRcloneConfig();
+                } else {
+                    showToast(data.error || 'Failed', 'error');
+                }
+            } catch (e) { showToast('Error: ' + e, 'error'); }
+        }
+
+        async function testRemote(name) {
+            showToast('Testing connection to "' + name + '"...');
+            try {
+                const res = await fetch(api(`/remotes/${name}/test`), { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    const i = data.info;
+                    const used = i.used != null ? (i.used / 1073741824).toFixed(1) + ' GB' : '?';
+                    const total = i.total != null ? (i.total / 1073741824).toFixed(1) + ' GB' : '?';
+                    showToast(`✅ ${name}: ${used} / ${total} used`);
+                } else {
+                    showToast(`❌ ${name}: ${data.error}`, 'error');
+                }
+            } catch (e) { showToast('Error: ' + e, 'error'); }
+        }
+
+        async function deleteRemote(name) {
+            if (!confirm(`Delete remote "${name}"? Make sure no backup jobs use this remote.`)) return;
+            try {
+                const res = await fetch(api(`/remotes/${name}`), { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Remote deleted');
+                    loadRemotes();
+                    loadRcloneConfig();
+                }
+            } catch (e) { showToast('Error: ' + e, 'error'); }
+        }
+
+        async function uploadConfig() {
+            const content = document.getElementById('rcloneConfigUpload').value.trim();
+            if (!content) { showToast('Paste rclone.conf content first', 'error'); return; }
+            if (!confirm('This will replace your current rclone config. A backup will be created. Continue?')) return;
+            try {
+                const res = await fetch(api('/rclone-config'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message);
+                    document.getElementById('rcloneConfigUpload').value = '';
+                    loadRcloneConfig();
+                    loadRemotes();
+                } else {
+                    showToast(data.error || 'Failed', 'error');
+                }
+            } catch (e) { showToast('Error: ' + e, 'error'); }
+        }
+
+        // ================================================================
+        // LOGS
+        // ================================================================
         async function loadLogList() {
             try {
                 const res = await fetch(api('/logs'));
                 const data = await res.json();
                 const sel = document.getElementById('logSelect');
                 sel.innerHTML = '<option value="">Select log file...</option>';
-                data.logs.forEach(l => {
+                (data.logs || []).forEach(l => {
                     const opt = document.createElement('option');
                     opt.value = l.name;
-                    opt.textContent = `${l.name} (${(l.size/1024).toFixed(1)}KB)`;
+                    opt.textContent = `${l.name} (${(l.size / 1024).toFixed(1)} KB)`;
                     sel.appendChild(opt);
                 });
-            } catch(e) { console.error('Log list error:', e); }
+            } catch (e) { console.error(e); }
         }
 
         async function loadLog() {
@@ -298,13 +848,13 @@
             if (!filename) return;
             stopLiveLog();
             try {
-                const res = await fetch(api(`/logs/${filename}?lines=200`));
+                const res = await fetch(api(`/logs/${filename}?lines=300`));
                 const data = await res.json();
                 const viewer = document.getElementById('logContent');
                 viewer.textContent = data.content || 'Empty log';
                 viewer.scrollTop = viewer.scrollHeight;
-            } catch(e) {
-                document.getElementById('logContent').textContent = 'Error loading log: ' + e;
+            } catch (e) {
+                document.getElementById('logContent').textContent = 'Error: ' + e;
             }
         }
 
@@ -319,81 +869,31 @@
                 viewer.textContent += e.data + '\n';
                 viewer.scrollTop = viewer.scrollHeight;
             };
-            liveLogSource.onerror = () => { stopLiveLog(); };
+            liveLogSource.onerror = () => stopLiveLog();
+            document.getElementById('liveBtn').textContent = '⏹ Stop';
             showToast('Live log streaming started');
         }
 
         function stopLiveLog() {
             if (liveLogSource) { liveLogSource.close(); liveLogSource = null; }
+            document.getElementById('liveBtn').textContent = '▶ Live';
         }
 
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
-            document.getElementById(`tab-${tab}`).style.display = 'block';
-            event.target.classList.add('active');
-            if (tab === 'setup') loadRemotes();
-            if (tab === 'logs') loadLogList();
+        // ================================================================
+        // UTILITIES
+        // ================================================================
+        function esc(s) {
+            if (!s) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
         }
 
-        async function loadRemotes() {
-            try {
-                const res = await fetch(api('/remotes'));
-                const data = await res.json();
-                const el = document.getElementById('remotesList');
-                if (data.remotes.length) {
-                    el.innerHTML = data.remotes.map(r => `<div class="info-row"><span class="info-value">📁 ${r}</span></div>`).join('');
-                } else {
-                    el.textContent = 'No remotes configured yet.';
-                }
-            } catch(e) {
-                document.getElementById('remotesList').textContent = 'Error loading remotes';
-            }
-        }
-
-        async function createRemote() {
-            const provider = document.getElementById('setupProvider').value;
-            const name = document.getElementById('setupRemoteName').value.trim();
-            if (!name) { showToast('Enter a remote name', 'error'); return; }
-            try {
-                const res = await fetch(api('/rclone/setup'), {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({provider, remote_name: name})
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showToast(data.message);
-                    loadRemotes();
-                    document.getElementById('setupOutput').innerHTML =
-                        `<div class="card" style="margin-top:8px;background:#111;font-family:monospace;font-size:0.8em;">${data.output || 'Remote created.'}</div>`;
-                } else {
-                    showToast(data.error || 'Setup failed', 'error');
-                }
-            } catch(e) {
-                showToast('Error: ' + e, 'error');
-            }
-        }
-
-        async function triggerBackup(account) {
-            try {
-                const res = await fetch(api('/trigger'), {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({account})
-                });
-                const data = await res.json();
-                if (data.success) showToast(data.message);
-                else showToast(data.error || 'Trigger failed', 'error');
-            } catch(e) {
-                showToast('Error: ' + e, 'error');
-            }
-        }
-
-        // Init
-        refresh();
-        loadLogList();
-        refreshInterval = setInterval(refresh, 10000);
+        // ================================================================
+        // INIT
+        // ================================================================
+        refreshDashboard();
+        refreshTimer = setInterval(refreshDashboard, 10000);
     </script>
 </body>
 </html>

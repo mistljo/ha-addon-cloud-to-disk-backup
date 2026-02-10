@@ -1,15 +1,10 @@
 ---
 configuration:
-  accounts:
-    name: Accounts
-    description: >-
-      List of cloud storage accounts to back up. Each account needs a name,
-      cloud provider, rclone remote name, and local backup path.
   schedule:
     name: Schedule
     description: >-
-      Automatic backup scheduling. When enabled, backups run at the configured
-      cron schedule.
+      Automatic backup scheduling. When enabled, all enabled backup jobs
+      run at the configured cron schedule. Jobs are managed via the Web UI.
   archive:
     name: Archive
     description: >-

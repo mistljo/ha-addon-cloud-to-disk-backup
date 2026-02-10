@@ -1,7 +1,7 @@
 ---
 name: "Cloud to Disk Backup"
-description: "Backup cloud storage (OneDrive) to local USB disks or NAS with automatic scheduling, retry logic, and I/O throttling."
-version: "0.1.0"
+description: "Backup cloud storage (OneDrive, Google Drive, Dropbox) to local disks. Configure backup jobs and cloud remotes entirely via the Web UI."
+version: "0.2.0"
 slug: "cloud-to-disk-backup"
 url: "https://github.com/mistljo/ha-addon-cloud-to-disk-backup"
 arch:
@@ -23,14 +23,6 @@ ports:
 ports_description:
   8099/tcp: "Web UI (Ingress)"
 options:
-  accounts:
-    - name: ""
-      cloud_provider: "onedrive"
-      remote_name: ""
-      backup_path: "/media/Backup_Disk_1/onedrive_backups"
-      excludes:
-        - "Personal Vault/**"
-        - "Pers*nlicher Tresor/**"
   schedule:
     enabled: true
     cron: "0 2 * * *"
@@ -52,13 +44,6 @@ options:
     rclone_transfers: 4
     rclone_checkers: 8
 schema:
-  accounts:
-    - name: str
-      cloud_provider: "list(onedrive|gdrive|dropbox)"
-      remote_name: str
-      backup_path: str
-      excludes:
-        - str
   schedule:
     enabled: bool
     cron: str

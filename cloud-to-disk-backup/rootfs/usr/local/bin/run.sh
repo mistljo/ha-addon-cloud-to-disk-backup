@@ -1,23 +1,34 @@
 #!/usr/bin/with-contenv bashio
 # ==============================================================================
-# Cloud to Disk Backup - Entry Point
+# Cloud to Disk Backup - Entry Point (v2.0 - Dynamic Configuration)
+# Backup jobs & cloud remotes are configured entirely via the Web UI.
+# Only global settings (schedule, archive, throttle) come from HA config.
 # ==============================================================================
 set -e
 
-CONFIG_PATH="/data/options.json"
 DATA_DIR="/data"
 RCLONE_CONF="${DATA_DIR}/rclone.conf"
 STATUS_DIR="${DATA_DIR}/status"
 RETRY_DIR="${DATA_DIR}/retry"
+JOBS_FILE="${DATA_DIR}/jobs.json"
 
 mkdir -p "$STATUS_DIR" "$RETRY_DIR" "${DATA_DIR}/logs"
 
-# ==============================================================================
-# Read Add-on Configuration
-# ==============================================================================
-bashio::log.info "Cloud to Disk Backup Add-on starting..."
+# Initialize jobs.json if it doesn't exist
+if [ ! -f "$JOBS_FILE" ]; then
+    echo '[]' > "$JOBS_FILE"
+fi
 
-# Export config as environment variables for child scripts
+# Initialize rclone.conf if it doesn't exist
+if [ ! -f "$RCLONE_CONF" ]; then
+    touch "$RCLONE_CONF"
+fi
+
+bashio::log.info "Cloud to Disk Backup v2.0 starting..."
+
+# ==============================================================================
+# Export global configuration (from HA add-on settings)
+# ==============================================================================
 export ADDON_SCHEDULE_ENABLED=$(bashio::config 'schedule.enabled')
 export ADDON_SCHEDULE_CRON=$(bashio::config 'schedule.cron')
 export ADDON_MAX_ARCHIVES=$(bashio::config 'archive.max_archives')
@@ -38,60 +49,44 @@ export ADDON_RCLONE_CONF="$RCLONE_CONF"
 export ADDON_STATUS_DIR="$STATUS_DIR"
 export ADDON_RETRY_DIR="$RETRY_DIR"
 export ADDON_DATA_DIR="$DATA_DIR"
+export ADDON_JOBS_FILE="$JOBS_FILE"
 
-# Get HA API access
+# HA API access
 export SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN}"
-export HA_API_URL="http://supervisor/core/api"
+
+# Ingress path for Web UI
+export INGRESS_PATH="$(bashio::addon.ingress_entry)"
 
 # ==============================================================================
-# Build account list from config
+# Start rclone RC daemon (internal API for remote management)
 # ==============================================================================
-ACCOUNT_COUNT=$(bashio::config 'accounts | length')
-bashio::log.info "Configured accounts: ${ACCOUNT_COUNT}"
-
-export ADDON_ACCOUNT_COUNT="$ACCOUNT_COUNT"
-
-for i in $(seq 0 $((ACCOUNT_COUNT - 1))); do
-    name=$(bashio::config "accounts[${i}].name")
-    provider=$(bashio::config "accounts[${i}].cloud_provider")
-    remote=$(bashio::config "accounts[${i}].remote_name")
-    path=$(bashio::config "accounts[${i}].backup_path")
-
-    export "ADDON_ACCOUNT_${i}_NAME=${name}"
-    export "ADDON_ACCOUNT_${i}_PROVIDER=${provider}"
-    export "ADDON_ACCOUNT_${i}_REMOTE=${remote}"
-    export "ADDON_ACCOUNT_${i}_PATH=${path}"
-
-    # Build excludes list
-    exclude_count=$(bashio::config "accounts[${i}].excludes | length")
-    excludes=""
-    for j in $(seq 0 $((exclude_count - 1))); do
-        exc=$(bashio::config "accounts[${i}].excludes[${j}]")
-        excludes="${excludes} --exclude \"${exc}\""
-    done
-    export "ADDON_ACCOUNT_${i}_EXCLUDES=${excludes}"
-
-    bashio::log.info "  Account ${i}: ${name} (${provider}) -> ${path}"
-done
+bashio::log.info "Starting rclone RC daemon on 127.0.0.1:5572..."
+rclone rcd --rc-addr 127.0.0.1:5572 --rc-no-auth --config "$RCLONE_CONF" \
+    > "${DATA_DIR}/logs/rclone_rcd.log" 2>&1 &
+RCLONE_RCD_PID=$!
+bashio::log.info "rclone RCD started (PID: ${RCLONE_RCD_PID})"
+sleep 2
 
 # ==============================================================================
-# Check rclone configuration
-# ==============================================================================
-if [ ! -f "$RCLONE_CONF" ]; then
-    bashio::log.warning "No rclone.conf found at ${RCLONE_CONF}"
-    bashio::log.warning "Please configure cloud storage via the Web UI"
-fi
-
-# ==============================================================================
-# Start Ingress Web UI (background)
+# Start Ingress Web UI
 # ==============================================================================
 bashio::log.info "Starting Web UI on port 8099..."
-python3 /usr/local/bin/web/app.py &
+export ADDON_WEB_PORT=8099
+python3 /usr/local/bin/web/app.py > "${DATA_DIR}/logs/web_ui.log" 2>&1 &
 WEB_PID=$!
 bashio::log.info "Web UI started (PID: ${WEB_PID})"
 
 # ==============================================================================
-# Start Watcher (main loop)
+# Log configuration summary
+# ==============================================================================
+JOB_COUNT=$(jq 'length' "$JOBS_FILE" 2>/dev/null || echo 0)
+bashio::log.info "Configuration:"
+bashio::log.info "  Schedule:  ${ADDON_SCHEDULE_ENABLED} (${ADDON_SCHEDULE_CRON})"
+bashio::log.info "  Jobs:      ${JOB_COUNT} configured (managed via Web UI)"
+bashio::log.info "  Ingress:   ${INGRESS_PATH}"
+
+# ==============================================================================
+# Start Watcher (main loop - reads jobs from /data/jobs.json)
 # ==============================================================================
 bashio::log.info "Starting backup watcher..."
 exec /usr/local/bin/watcher.sh
