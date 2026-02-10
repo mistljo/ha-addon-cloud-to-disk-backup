@@ -341,11 +341,11 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Provider</label>
-                    <select id="remoteProvider" onchange="updateAuthInstructions()">
+                    <select id="remoteProvider" onchange="updateProviderFields()">
                         <option value="onedrive">Microsoft OneDrive</option>
                         <option value="gdrive">Google Drive</option>
                         <option value="dropbox">Dropbox</option>
-                        <option value="s3">Amazon S3</option>
+                        <option value="s3">Amazon S3 / S3-compatible</option>
                         <option value="sftp">SFTP</option>
                         <option value="webdav">WebDAV</option>
                     </select>
@@ -356,27 +356,131 @@
                 </div>
             </div>
 
-            <div class="auth-card" id="authInstructions">
-                <h3>🔑 Authentication (OAuth Providers)</h3>
-                <p>1. Install <a href="https://rclone.org/downloads/" target="_blank" style="color:var(--primary)">rclone</a> on your <strong>local PC</strong>.</p>
-                <p>2. Run this command:</p>
-                <code class="code-block" id="authCommand" onclick="copyAuthCommand()">rclone authorize "onedrive"</code>
-                <p>3. Complete the login in your browser.</p>
-                <p>4. Copy the <strong>token JSON</strong> from the terminal output and paste it below.</p>
+            <!-- OAuth token section (OneDrive, Google Drive, Dropbox) -->
+            <div id="oauthSection">
+                <div class="auth-card" id="authInstructions">
+                    <h3>🔑 Authentication (Token Paste)</h3>
+                    <p>1. Install <a href="https://rclone.org/downloads/" target="_blank" style="color:var(--primary)">rclone</a> on your <strong>local PC</strong>.</p>
+                    <p>2. Run this command:</p>
+                    <code class="code-block" id="authCommand" onclick="copyAuthCommand()">rclone authorize "onedrive"</code>
+                    <p>3. Complete the login in your browser.</p>
+                    <p>4. Copy the <strong>token JSON</strong> from the terminal output and paste it below.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Token (paste from rclone authorize output) *</label>
+                    <textarea id="remoteToken" rows="4" placeholder='Paste the full JSON token here, e.g.:&#10;{"access_token":"...","token_type":"Bearer","refresh_token":"...","expiry":"..."}'></textarea>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Token (paste from rclone authorize output)</label>
-                <textarea id="remoteToken" rows="4" placeholder='Paste the full JSON token here, e.g.:&#10;{"access_token":"...","token_type":"Bearer","refresh_token":"...","expiry":"..."}'></textarea>
+            <!-- OneDrive specific -->
+            <div class="provider-fields" id="onedriveFields">
+                <div class="form-group">
+                    <label>OneDrive Drive Type</label>
+                    <select id="remoteDriveType">
+                        <option value="personal">Personal</option>
+                        <option value="business">Business / OneDrive for Business</option>
+                        <option value="documentLibrary">SharePoint Document Library</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="form-group" id="driveTypeGroup">
-                <label>OneDrive Drive Type</label>
-                <select id="remoteDriveType">
-                    <option value="personal">Personal</option>
-                    <option value="business">Business / OneDrive for Business</option>
-                    <option value="documentLibrary">SharePoint Document Library</option>
-                </select>
+            <!-- Google Drive specific -->
+            <div class="provider-fields" id="gdriveFields" style="display:none">
+                <div class="form-group">
+                    <label>Root Folder ID (optional, leave empty for entire drive)</label>
+                    <input type="text" id="gdriveRootFolder" placeholder="e.g., 0BxYZ... (leave empty for root)">
+                </div>
+            </div>
+
+            <!-- S3 specific -->
+            <div class="provider-fields" id="s3Fields" style="display:none">
+                <div class="form-group">
+                    <label>S3 Provider</label>
+                    <select id="s3Provider">
+                        <option value="AWS">Amazon Web Services (AWS)</option>
+                        <option value="Minio">Minio</option>
+                        <option value="Wasabi">Wasabi</option>
+                        <option value="DigitalOcean">DigitalOcean Spaces</option>
+                        <option value="Cloudflare">Cloudflare R2</option>
+                        <option value="Other">Other S3-compatible</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Access Key ID *</label>
+                        <input type="text" id="s3AccessKey" placeholder="AKIAIOSFODNN7EXAMPLE">
+                    </div>
+                    <div class="form-group">
+                        <label>Secret Access Key *</label>
+                        <input type="password" id="s3SecretKey" placeholder="wJalrXUtnFEMI/...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Region</label>
+                        <input type="text" id="s3Region" placeholder="e.g., us-east-1">
+                    </div>
+                    <div class="form-group">
+                        <label>Endpoint (for non-AWS S3)</label>
+                        <input type="text" id="s3Endpoint" placeholder="e.g., s3.wasabisys.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SFTP specific -->
+            <div class="provider-fields" id="sftpFields" style="display:none">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Host *</label>
+                        <input type="text" id="sftpHost" placeholder="example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Port</label>
+                        <input type="number" id="sftpPort" value="22" placeholder="22">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" id="sftpUser" placeholder="username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="sftpPass" placeholder="password">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Key File Path (optional, alternative to password)</label>
+                    <input type="text" id="sftpKeyFile" placeholder="/ssl/id_rsa">
+                </div>
+            </div>
+
+            <!-- WebDAV specific -->
+            <div class="provider-fields" id="webdavFields" style="display:none">
+                <div class="form-group">
+                    <label>URL *</label>
+                    <input type="text" id="webdavUrl" placeholder="https://example.com/remote.php/webdav/">
+                </div>
+                <div class="form-group">
+                    <label>Vendor</label>
+                    <select id="webdavVendor">
+                        <option value="other">Other</option>
+                        <option value="nextcloud">Nextcloud</option>
+                        <option value="owncloud">ownCloud</option>
+                        <option value="sharepoint">SharePoint Online</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="webdavUser" placeholder="username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="webdavPass" placeholder="password">
+                    </div>
+                </div>
             </div>
 
             <div class="actions">
@@ -453,7 +557,7 @@
 
             if (tab === 'dashboard') refreshDashboard();
             if (tab === 'jobs') { loadRemotesForSelect(); loadJobs(); }
-            if (tab === 'remotes') { loadRemotes(); loadRcloneConfig(); updateAuthInstructions(); }
+            if (tab === 'remotes') { loadRemotes(); loadRcloneConfig(); updateProviderFields(); }
             if (tab === 'logs') loadLogList();
         }
 
@@ -682,25 +786,30 @@
         // ================================================================
         // CLOUD REMOTES
         // ================================================================
-        const PROVIDER_RCLONE_MAP = {
-            onedrive: 'onedrive', gdrive: 'drive', dropbox: 'dropbox',
-            s3: null, sftp: null, webdav: null
+        const OAUTH_PROVIDERS = {
+            onedrive: 'onedrive', gdrive: 'drive', dropbox: 'dropbox'
         };
 
-        function updateAuthInstructions() {
+        function updateProviderFields() {
             const provider = document.getElementById('remoteProvider').value;
-            const rtype = PROVIDER_RCLONE_MAP[provider];
-            const authEl = document.getElementById('authInstructions');
-            const cmdEl = document.getElementById('authCommand');
-            const dtEl = document.getElementById('driveTypeGroup');
+            const isOAuth = provider in OAUTH_PROVIDERS;
 
-            if (rtype) {
-                authEl.style.display = 'block';
-                cmdEl.textContent = `rclone authorize "${rtype}"`;
-            } else {
-                authEl.style.display = 'none';
+            // OAuth section
+            document.getElementById('oauthSection').style.display = isOAuth ? 'block' : 'none';
+            if (isOAuth) {
+                document.getElementById('authCommand').textContent =
+                    `rclone authorize "${OAUTH_PROVIDERS[provider]}"`;
             }
-            dtEl.style.display = provider === 'onedrive' ? 'block' : 'none';
+
+            // Provider-specific fields
+            document.querySelectorAll('.provider-fields').forEach(el => el.style.display = 'none');
+            const fieldMap = {
+                onedrive: 'onedriveFields', gdrive: 'gdriveFields',
+                s3: 's3Fields', sftp: 'sftpFields', webdav: 'webdavFields'
+            };
+            if (fieldMap[provider]) {
+                document.getElementById(fieldMap[provider]).style.display = 'block';
+            }
         }
 
         function copyAuthCommand() {
@@ -747,13 +856,64 @@
         async function createRemote() {
             const name = document.getElementById('remoteName').value.trim();
             const provider = document.getElementById('remoteProvider').value;
-            const token = document.getElementById('remoteToken').value.trim();
-            const driveType = document.getElementById('remoteDriveType').value;
 
             if (!name) { showToast('Enter a remote name', 'error'); return; }
 
-            const body = { name, provider, token };
-            if (provider === 'onedrive') body.drive_type = driveType;
+            const body = { name, provider };
+
+            // OAuth providers: token required
+            if (provider in OAUTH_PROVIDERS) {
+                body.token = document.getElementById('remoteToken').value.trim();
+                if (!body.token) {
+                    showToast('Token is required. Run "rclone authorize" on your PC and paste the token.', 'error');
+                    return;
+                }
+            }
+
+            // OneDrive
+            if (provider === 'onedrive') {
+                body.drive_type = document.getElementById('remoteDriveType').value;
+            }
+            // Google Drive
+            if (provider === 'gdrive') {
+                const rf = document.getElementById('gdriveRootFolder').value.trim();
+                if (rf) body.root_folder_id = rf;
+            }
+            // S3
+            if (provider === 's3') {
+                body.s3_provider = document.getElementById('s3Provider').value;
+                body.access_key_id = document.getElementById('s3AccessKey').value.trim();
+                body.secret_access_key = document.getElementById('s3SecretKey').value.trim();
+                body.region = document.getElementById('s3Region').value.trim();
+                body.endpoint = document.getElementById('s3Endpoint').value.trim();
+                if (!body.access_key_id || !body.secret_access_key) {
+                    showToast('Access Key ID and Secret Access Key are required for S3', 'error');
+                    return;
+                }
+            }
+            // SFTP
+            if (provider === 'sftp') {
+                body.host = document.getElementById('sftpHost').value.trim();
+                body.user = document.getElementById('sftpUser').value.trim();
+                body.pass = document.getElementById('sftpPass').value.trim();
+                body.port = document.getElementById('sftpPort').value.trim();
+                body.key_file = document.getElementById('sftpKeyFile').value.trim();
+                if (!body.host || !body.user) {
+                    showToast('Host and Username are required for SFTP', 'error');
+                    return;
+                }
+            }
+            // WebDAV
+            if (provider === 'webdav') {
+                body.url = document.getElementById('webdavUrl').value.trim();
+                body.vendor = document.getElementById('webdavVendor').value;
+                body.user = document.getElementById('webdavUser').value.trim();
+                body.pass = document.getElementById('webdavPass').value.trim();
+                if (!body.url) {
+                    showToast('URL is required for WebDAV', 'error');
+                    return;
+                }
+            }
 
             try {
                 const res = await fetch(api('/remotes'), {

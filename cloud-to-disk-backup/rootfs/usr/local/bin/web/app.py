@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Cloud to Disk Backup - Ingress Web UI (v2.0)
+"""Cloud to Disk Backup - Ingress Web UI (v2.1)
 
 Full dynamic configuration:
 - Backup jobs: CRUD via /api/jobs (stored in /data/jobs.json)
-- Cloud remotes: managed via rclone RC API on localhost:5572
+- Cloud remotes: managed via direct rclone.conf editing (no RC API for config)
 - Status, logs, triggers: unchanged from v1
 """
 
@@ -15,6 +15,7 @@ import subprocess
 import uuid
 import urllib.request
 import urllib.error
+from collections import OrderedDict
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, Response
 
@@ -64,6 +65,43 @@ def rc_call(endpoint, params=None):
         return {'error': f'RC error {e.code}: {body}'}
     except Exception as e:
         return {'error': str(e)}
+
+
+# =========================================================================
+# rclone.conf direct read/write (avoids RC API config/create issues)
+# =========================================================================
+
+def read_rclone_sections():
+    """Read rclone.conf into OrderedDict: {name: {key: value, ...}}."""
+    sections = OrderedDict()
+    current = None
+    try:
+        with open(RCLONE_CONF, 'r') as f:
+            for line in f:
+                line = line.rstrip('\n\r')
+                m = re.match(r'^\[(.+)\]$', line.strip())
+                if m:
+                    current = m.group(1)
+                    sections[current] = OrderedDict()
+                elif current is not None and '=' in line:
+                    key, _, value = line.partition('=')
+                    sections[current][key.strip()] = value.strip()
+    except FileNotFoundError:
+        pass
+    return sections
+
+
+def write_rclone_sections(sections):
+    """Write OrderedDict back to rclone.conf."""
+    with open(RCLONE_CONF, 'w') as f:
+        first = True
+        for name, params in sections.items():
+            if not first:
+                f.write('\n')
+            first = False
+            f.write(f'[{name}]\n')
+            for key, value in params.items():
+                f.write(f'{key} = {value}\n')
 
 
 def get_all_status():
@@ -214,44 +252,47 @@ def api_delete_job(job_id):
 
 
 # =========================================================================
-# Routes: Cloud Remotes (via rclone RC API)
+# Routes: Cloud Remotes (direct rclone.conf read/write)
 # =========================================================================
 
 @app.route('/api/remotes', methods=['GET'])
 def api_list_remotes():
-    result = rc_call('config/listremotes')
-    if 'error' in result:
-        # Fallback: parse rclone.conf directly
-        remotes = []
-        try:
-            with open(RCLONE_CONF, 'r') as f:
-                for line in f:
-                    m = re.match(r'^\[(.+)\]$', line.strip())
-                    if m:
-                        remotes.append({'name': m.group(1), 'type': '?'})
-        except FileNotFoundError:
-            pass
-        return jsonify({'remotes': remotes})
+    sections = read_rclone_sections()
+    remotes = [{'name': name, 'type': params.get('type', '?')}
+               for name, params in sections.items()]
+    return jsonify({'remotes': remotes})
 
-    remote_list = result.get('remotes', [])
-    details = []
-    for r in remote_list:
-        name = r.rstrip(':')
-        cfg = rc_call('config/get', {'name': name})
-        rtype = cfg.get('type', 'unknown') if 'error' not in cfg else '?'
-        details.append({'name': name, 'type': rtype})
-    return jsonify({'remotes': details})
+
+@app.route('/api/remotes/<name>/config', methods=['GET'])
+def api_get_remote_config(name):
+    """Get config for a single remote (tokens redacted)."""
+    sections = read_rclone_sections()
+    if name not in sections:
+        return jsonify({'error': 'Remote not found'}), 404
+    safe = {}
+    for k, v in sections[name].items():
+        if k in ('token', 'client_secret', 'secret_access_key', 'pass',
+                 'password', 'app_key', 'app_secret'):
+            safe[k] = '[REDACTED]'
+        else:
+            safe[k] = v
+    return jsonify({'name': name, 'config': safe})
 
 
 @app.route('/api/remotes', methods=['POST'])
 def api_create_remote():
+    """Create a new rclone remote by writing directly to rclone.conf."""
     data = request.get_json()
     name = data.get('name', '').strip()
     provider = data.get('provider', '').strip()
-    token = data.get('token', '').strip()
 
     if not name or not provider:
         return jsonify({'error': 'Name and provider are required'}), 400
+
+    if not re.match(r'^[a-zA-Z0-9_-]+$', name):
+        return jsonify({
+            'error': 'Remote name may only contain letters, numbers, _ and -'
+        }), 400
 
     provider_map = {
         'onedrive': 'onedrive',
@@ -263,26 +304,88 @@ def api_create_remote():
     }
     rclone_type = provider_map.get(provider, provider)
 
-    params = {'name': name, 'type': rclone_type, 'parameters': {}}
-    if token:
-        params['parameters']['token'] = token
-    if provider == 'onedrive':
-        params['parameters']['drive_type'] = data.get('drive_type', 'personal')
+    sections = read_rclone_sections()
+    if name in sections:
+        return jsonify({'error': f'Remote "{name}" already exists'}), 400
 
-    result = rc_call('config/create', params)
-    if 'error' in result:
-        return jsonify({'success': False, 'error': result['error']}), 400
+    params = OrderedDict()
+    params['type'] = rclone_type
+
+    # OAuth token (OneDrive, Google Drive, Dropbox)
+    token = data.get('token', '').strip()
+    if token:
+        params['token'] = token
+
+    # OneDrive specific
+    if provider == 'onedrive':
+        params['drive_type'] = data.get('drive_type', 'personal')
+
+    # Google Drive specific
+    if provider == 'gdrive':
+        root_folder_id = data.get('root_folder_id', '').strip()
+        if root_folder_id:
+            params['root_folder_id'] = root_folder_id
+
+    # S3 specific
+    if provider == 's3':
+        s3_provider = data.get('s3_provider', 'AWS').strip()
+        params['provider'] = s3_provider
+        for key in ('access_key_id', 'secret_access_key', 'region',
+                    'endpoint', 'acl'):
+            val = data.get(key, '').strip()
+            if val:
+                params[key] = val
+
+    # SFTP specific
+    if provider == 'sftp':
+        for key in ('host', 'port', 'user', 'pass', 'key_file'):
+            val = data.get(key, '').strip()
+            if val:
+                params[key] = val
+
+    # WebDAV specific
+    if provider == 'webdav':
+        for key in ('url', 'vendor', 'user', 'pass'):
+            val = data.get(key, '').strip()
+            if val:
+                params[key] = val
+
+    sections[name] = params
+    write_rclone_sections(sections)
+
     return jsonify({
         'success': True,
-        'message': f'Remote "{name}" ({rclone_type}) created'
+        'message': f'Remote "{name}" ({rclone_type}) created successfully'
     })
+
+
+@app.route('/api/remotes/<name>', methods=['PUT'])
+def api_update_remote(name):
+    """Update an existing remote's config parameters."""
+    data = request.get_json()
+    sections = read_rclone_sections()
+    if name not in sections:
+        return jsonify({'error': f'Remote "{name}" not found'}), 404
+
+    updates = data.get('config', {})
+    for k, v in updates.items():
+        v = str(v).strip()
+        if v:
+            sections[name][k] = v
+        elif k in sections[name] and k != 'type':
+            del sections[name][k]
+
+    write_rclone_sections(sections)
+    return jsonify({'success': True, 'message': f'Remote "{name}" updated'})
 
 
 @app.route('/api/remotes/<name>', methods=['DELETE'])
 def api_delete_remote(name):
-    result = rc_call('config/delete', {'name': name})
-    if 'error' in result:
-        return jsonify({'success': False, 'error': result['error']}), 400
+    sections = read_rclone_sections()
+    if name not in sections:
+        return jsonify({'error': f'Remote "{name}" not found'}), 404
+    del sections[name]
+    write_rclone_sections(sections)
     return jsonify({'success': True})
 
 
