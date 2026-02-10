@@ -1,0 +1,27 @@
+---
+configuration:
+  accounts:
+    name: Accounts
+    description: >-
+      List of cloud storage accounts to back up. Each account needs a name,
+      cloud provider, rclone remote name, and local backup path.
+  schedule:
+    name: Schedule
+    description: >-
+      Automatic backup scheduling. When enabled, backups run at the configured
+      cron schedule.
+  archive:
+    name: Archive
+    description: >-
+      Control how many archives and logs to keep, archive split size, and
+      compression level.
+  throttle:
+    name: Throttle
+    description: >-
+      I/O throttle settings. Auto-detect identifies SATA vs USB disks and
+      adjusts write speed to prevent system lockups with hardware watchdogs.
+  advanced:
+    name: Advanced
+    description: >-
+      Advanced kernel and rclone tuning options. Only change these if you know
+      what you are doing.

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud to Disk Backup</title>
+    <style>
+        :root {
+            --primary: #03a9f4;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+            --bg: #1c1c1c;
+            --card-bg: #2a2a2a;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --border: #444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 16px;
+            line-height: 1.5;
+        }
+        h1 { font-size: 1.4em; margin-bottom: 16px; color: var(--primary); }
+        h2 { font-size: 1.1em; margin-bottom: 12px; color: var(--text); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .card-header h3 { font-size: 1em; }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-running { background: var(--primary); color: #fff; }
+        .badge-completed { background: var(--success); color: #fff; }
+        .badge-error { background: var(--error); color: #fff; }
+        .badge-idle { background: var(--border); color: var(--text); }
+        .badge-unknown { background: var(--text-dim); color: #fff; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .progress-fill.complete { background: var(--success); }
+        .progress-fill.error { background: var(--error); }
+        .info-row { display: flex; justify-content: space-between; font-size: 0.85em; margin: 4px 0; }
+        .info-label { color: var(--text-dim); }
+        .info-value { color: var(--text); }
+        .disk-card .disk-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .disk-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.5s ease;
+        }
+        .disk-fill.warn { background: var(--warning); }
+        .disk-fill.critical { background: var(--error); }
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+        .tab {
+            padding: 6px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 0.85em;
+            color: var(--text-dim);
+        }
+        .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .log-viewer {
+            background: #111;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.8em;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+        .btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-danger { background: var(--error); color: #fff; }
+        .btn-small { padding: 4px 10px; font-size: 0.75em; }
+        .btn:hover { opacity: 0.85; }
+        .actions { display: flex; gap: 8px; margin-top: 8px; }
+        .setup-section { margin-top: 24px; }
+        .form-group { margin: 8px 0; }
+        .form-group label { display: block; font-size: 0.85em; color: var(--text-dim); margin-bottom: 4px; }
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 6px 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 0.9em;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; }
+        .toast-success { background: var(--success); color: #fff; }
+        .toast-error { background: var(--error); color: #fff; }
+        .refresh-info { font-size: 0.75em; color: var(--text-dim); float: right; }
+    </style>
+</head>
+<body>
+    <h1>☁️ Cloud to Disk Backup <span class="refresh-info" id="lastUpdate"></span></h1>
+
+    <!-- Status Cards -->
+    <div class="grid" id="statusGrid"></div>
+
+    <!-- Disk Info -->
+    <div class="card disk-card" id="diskCard" style="margin-bottom: 24px;"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('logs')">📋 Logs</div>
+        <div class="tab" onclick="switchTab('setup')">⚙️ Setup</div>
+    </div>
+
+    <!-- Log Viewer -->
+    <div id="tab-logs">
+        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+            <select id="logSelect" onchange="loadLog()" style="flex:1; padding:6px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+                <option value="">Select log file...</option>
+            </select>
+            <button class="btn btn-primary btn-small" onclick="toggleLiveLog()">▶ Live</button>
+        </div>
+        <div class="log-viewer" id="logContent">Select a log file to view...</div>
+    </div>
+
+    <!-- Setup -->
+    <div id="tab-setup" style="display:none;">
+        <div class="card">
+            <h2>rclone Remote Setup</h2>
+            <p style="font-size:0.85em; color:var(--text-dim); margin-bottom:12px;">
+                Configure cloud storage remotes. Each account needs a configured rclone remote.
+            </p>
+            <div class="form-group">
+                <label>Cloud Provider</label>
+                <select id="setupProvider">
+                    <option value="onedrive">Microsoft OneDrive</option>
+                    <option value="gdrive">Google Drive</option>
+                    <option value="dropbox">Dropbox</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Remote Name</label>
+                <input type="text" id="setupRemoteName" placeholder="e.g., my_onedrive">
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="createRemote()">Create Remote</button>
+            </div>
+            <div id="setupOutput" style="margin-top:12px;"></div>
+
+            <h2 style="margin-top:24px;">Configured Remotes</h2>
+            <div id="remotesList" style="font-size:0.9em; color:var(--text-dim);">Loading...</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const BASE = '{{ ingress_path }}';
+        let liveLogSource = null;
+        let refreshInterval = null;
+
+        function api(path) { return `${BASE}/api${path}`; }
+
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = `toast toast-${type} show`;
+            setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function badgeClass(status) {
+            const map = { running: 'badge-running', completed: 'badge-completed', error: 'badge-error', idle: 'badge-idle' };
+            return map[status] || 'badge-unknown';
+        }
+
+        function renderStatus(accounts, disk) {
+            const grid = document.getElementById('statusGrid');
+            if (!accounts.length) {
+                grid.innerHTML = '<div class="card"><p style="color:var(--text-dim)">No backup accounts configured. Add accounts in the add-on configuration.</p></div>';
+                return;
+            }
+            grid.innerHTML = accounts.map(a => {
+                const progress = a.progress || 0;
+                const fillClass = a.status === 'completed' ? 'complete' : a.status === 'error' ? 'error' : '';
+                return `
+                <div class="card">
+                    <div class="card-header">
+                        <h3>👤 ${a.account || 'Unknown'}</h3>
+                        <span class="badge ${badgeClass(a.status)}">${a.status || 'unknown'}</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${progress}%"></div></div>
+                    <div class="info-row"><span class="info-label">Stage</span><span class="info-value">${a.stage || '-'} ${a.stage_number ? `(${a.stage_number}/3)` : ''}</span></div>
+                    <div class="info-row"><span class="info-label">Message</span><span class="info-value">${a.message || '-'}</span></div>
+                    <div class="info-row"><span class="info-label">Speed</span><span class="info-value">${a.speed_mbps ? a.speed_mbps + ' MB/s' : '-'}</span></div>
+                    <div class="info-row"><span class="info-label">Retries</span><span class="info-value">${a.retry_count !== undefined ? a.retry_count : '-'}</span></div>
+                    <div class="info-row"><span class="info-label">Updated</span><span class="info-value">${a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '-'}</span></div>
+                    <div class="actions">
+                        <button class="btn btn-primary btn-small" onclick="triggerBackup('${a.account}')">▶ Run Now</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Disk card
+            const dc = document.getElementById('diskCard');
+            const pct = parseInt(disk.percent) || 0;
+            const fillCls = pct > 90 ? 'critical' : pct > 75 ? 'warn' : '';
+            dc.innerHTML = `
+                <h2>💾 Disk Usage</h2>
+                <div class="disk-bar"><div class="disk-fill ${fillCls}" style="width:${pct}%"></div></div>
+                <div class="info-row"><span class="info-label">Used</span><span class="info-value">${disk.used} / ${disk.total} (${disk.percent})</span></div>
+                <div class="info-row"><span class="info-label">Available</span><span class="info-value">${disk.available}</span></div>`;
+        }
+
+        async function refresh() {
+            try {
+                const res = await fetch(api('/status'));
+                const data = await res.json();
+                renderStatus(data.accounts, data.disk);
+                document.getElementById('lastUpdate').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+            } catch(e) {
+                console.error('Refresh error:', e);
+            }
+        }
+
+        async function loadLogList() {
+            try {
+                const res = await fetch(api('/logs'));
+                const data = await res.json();
+                const sel = document.getElementById('logSelect');
+                sel.innerHTML = '<option value="">Select log file...</option>';
+                data.logs.forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.name;
+                    opt.textContent = `${l.name} (${(l.size/1024).toFixed(1)}KB)`;
+                    sel.appendChild(opt);
+                });
+            } catch(e) { console.error('Log list error:', e); }
+        }
+
+        async function loadLog() {
+            const filename = document.getElementById('logSelect').value;
+            if (!filename) return;
+            stopLiveLog();
+            try {
+                const res = await fetch(api(`/logs/${filename}?lines=200`));
+                const data = await res.json();
+                const viewer = document.getElementById('logContent');
+                viewer.textContent = data.content || 'Empty log';
+                viewer.scrollTop = viewer.scrollHeight;
+            } catch(e) {
+                document.getElementById('logContent').textContent = 'Error loading log: ' + e;
+            }
+        }
+
+        function toggleLiveLog() {
+            const filename = document.getElementById('logSelect').value;
+            if (!filename) { showToast('Select a log file first', 'error'); return; }
+            if (liveLogSource) { stopLiveLog(); return; }
+
+            liveLogSource = new EventSource(api(`/logs/${filename}/stream`));
+            const viewer = document.getElementById('logContent');
+            liveLogSource.onmessage = (e) => {
+                viewer.textContent += e.data + '\n';
+                viewer.scrollTop = viewer.scrollHeight;
+            };
+            liveLogSource.onerror = () => { stopLiveLog(); };
+            showToast('Live log streaming started');
+        }
+
+        function stopLiveLog() {
+            if (liveLogSource) { liveLogSource.close(); liveLogSource = null; }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+            document.getElementById(`tab-${tab}`).style.display = 'block';
+            event.target.classList.add('active');
+            if (tab === 'setup') loadRemotes();
+            if (tab === 'logs') loadLogList();
+        }
+
+        async function loadRemotes() {
+            try {
+                const res = await fetch(api('/remotes'));
+                const data = await res.json();
+                const el = document.getElementById('remotesList');
+                if (data.remotes.length) {
+                    el.innerHTML = data.remotes.map(r => `<div class="info-row"><span class="info-value">📁 ${r}</span></div>`).join('');
+                } else {
+                    el.textContent = 'No remotes configured yet.';
+                }
+            } catch(e) {
+                document.getElementById('remotesList').textContent = 'Error loading remotes';
+            }
+        }
+
+        async function createRemote() {
+            const provider = document.getElementById('setupProvider').value;
+            const name = document.getElementById('setupRemoteName').value.trim();
+            if (!name) { showToast('Enter a remote name', 'error'); return; }
+            try {
+                const res = await fetch(api('/rclone/setup'), {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({provider, remote_name: name})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message);
+                    loadRemotes();
+                    document.getElementById('setupOutput').innerHTML =
+                        `<div class="card" style="margin-top:8px;background:#111;font-family:monospace;font-size:0.8em;">${data.output || 'Remote created.'}</div>`;
+                } else {
+                    showToast(data.error || 'Setup failed', 'error');
+                }
+            } catch(e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        async function triggerBackup(account) {
+            try {
+                const res = await fetch(api('/trigger'), {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({account})
+                });
+                const data = await res.json();
+                if (data.success) showToast(data.message);
+                else showToast(data.error || 'Trigger failed', 'error');
+            } catch(e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        // Init
+        refresh();
+        loadLogList();
+        refreshInterval = setInterval(refresh, 10000);
+    </script>
+</body>
+</html>

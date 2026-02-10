@@ -1,0 +1,84 @@
+---
+name: "Cloud to Disk Backup"
+description: "Backup cloud storage (OneDrive) to local USB disks or NAS with automatic scheduling, retry logic, and I/O throttling."
+version: "0.1.0"
+slug: "cloud-to-disk-backup"
+url: "https://github.com/mistljo/ha-addon-cloud-to-disk-backup"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+  - i386
+hassio_api: true
+homeassistant_api: true
+ingress: true
+ingress_port: 8099
+panel_icon: "mdi:cloud-download"
+panel_title: "Cloud Backup"
+map:
+  - media:rw
+  - ssl:ro
+ports:
+  8099/tcp: null
+ports_description:
+  8099/tcp: "Web UI (Ingress)"
+options:
+  accounts:
+    - name: ""
+      cloud_provider: "onedrive"
+      remote_name: ""
+      backup_path: "/media/Backup_Disk_1/onedrive_backups"
+      excludes:
+        - "Personal Vault/**"
+        - "Pers*nlicher Tresor/**"
+  schedule:
+    enabled: true
+    cron: "0 2 * * *"
+  archive:
+    max_archives: 4
+    max_logs: 5
+    split_size_mb: 10240
+    compression_level: 1
+  throttle:
+    auto_detect: true
+    sata_chunk_mb: 10
+    sata_pause_sec: 2
+    usb_chunk_mb: 50
+    usb_pause_sec: 1
+  advanced:
+    dirty_ratio: 5
+    dirty_background_ratio: 3
+    max_retries: 5
+    rclone_transfers: 4
+    rclone_checkers: 8
+schema:
+  accounts:
+    - name: str
+      cloud_provider: "list(onedrive|gdrive|dropbox)"
+      remote_name: str
+      backup_path: str
+      excludes:
+        - str
+  schedule:
+    enabled: bool
+    cron: str
+  archive:
+    max_archives: "int(1,99)"
+    max_logs: "int(1,99)"
+    split_size_mb: "int(100,102400)"
+    compression_level: "int(1,9)"
+  throttle:
+    auto_detect: bool
+    sata_chunk_mb: "int(1,100)"
+    sata_pause_sec: "int(0,10)"
+    usb_chunk_mb: "int(1,200)"
+    usb_pause_sec: "int(0,10)"
+  advanced:
+    dirty_ratio: "int(1,50)"
+    dirty_background_ratio: "int(1,50)"
+    max_retries: "int(1,20)"
+    rclone_transfers: "int(1,16)"
+    rclone_checkers: "int(1,32)"
+startup: "application"
+boot: "auto"
+init: false

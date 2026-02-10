@@ -1,0 +1,28 @@
+---
+configuration:
+  accounts:
+    name: Konten
+    description: >-
+      Liste der Cloud-Speicher-Konten für das Backup. Jedes Konto benötigt
+      einen Namen, Cloud-Anbieter, rclone Remote-Name und lokalen Backup-Pfad.
+  schedule:
+    name: Zeitplan
+    description: >-
+      Automatische Backup-Planung. Wenn aktiviert, werden Backups nach dem
+      konfigurierten Cron-Zeitplan ausgeführt.
+  archive:
+    name: Archiv
+    description: >-
+      Steuerung der Archive- und Log-Aufbewahrung, Archiv-Teilgröße und
+      Kompressionsstufe.
+  throttle:
+    name: Drosselung
+    description: >-
+      I/O-Drosselungseinstellungen. Die automatische Erkennung unterscheidet
+      SATA- und USB-Festplatten und passt die Schreibgeschwindigkeit an, um
+      Systemabstürze bei Hardware-Watchdogs zu vermeiden.
+  advanced:
+    name: Erweitert
+    description: >-
+      Erweiterte Kernel- und rclone-Optimierungen. Ändern Sie diese nur, wenn
+      Sie wissen, was Sie tun.

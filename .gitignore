@@ -1,0 +1,29 @@
+# Private data / credentials - NEVER commit these!
+*.conf
+*.pem
+*.key
+*.token
+rclone.conf
+secrets.yaml
+
+# Runtime
+*.log
+*.pid
+*.tmp
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+*.tar.gz
+node_modules/

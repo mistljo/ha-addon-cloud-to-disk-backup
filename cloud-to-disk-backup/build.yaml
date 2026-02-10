@@ -1,0 +1,8 @@
+image: ghcr.io/mistljo/ha-addon-cloud-to-disk-backup/{arch}
+build_from:
+  amd64: ghcr.io/hassio-addons/base:17.0.1
+  aarch64: ghcr.io/hassio-addons/base:17.0.1
+  armv7: ghcr.io/hassio-addons/base:17.0.1
+  i386: ghcr.io/hassio-addons/base:17.0.1
+args:
+  BUILD_FROM: ghcr.io/hassio-addons/base:17.0.1

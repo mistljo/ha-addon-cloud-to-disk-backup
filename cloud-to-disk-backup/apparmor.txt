@@ -1,0 +1,85 @@
+#include <tunables/global>
+
+profile cloud-to-disk-backup flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # Capabilities
+  capability net_admin,
+  capability net_raw,
+  capability setgid,
+  capability setuid,
+  capability chown,
+  capability fowner,
+  capability dac_override,
+  capability dac_read_search,
+  capability sys_nice,
+
+  # S6 Overlay
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /usr/lib/** ix,
+  /usr/sbin/** ix,
+  /run/{s6,s6-rc*,service}/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/s6/** rix,
+  /etc/s6-overlay/** rix,
+  /etc/cont-init.d/** rix,
+  /etc/cont-finish.d/** rix,
+  /etc/services.d/** rwix,
+
+  # Bashio
+  /usr/lib/bashio/** ix,
+  /tmp/** rwk,
+
+  # Application
+  /usr/local/bin/** rix,
+  /usr/local/bin/web/** r,
+  /usr/local/bin/web/templates/** r,
+  /usr/local/bin/web/static/** r,
+
+  # Data
+  /data/** rw,
+  /data/rclone.conf rw,
+
+  # Media (backup destination)
+  /media/** rw,
+
+  # SSL (read-only for rclone HTTPS)
+  /ssl/** r,
+
+  # System
+  /dev/tty rw,
+  /dev/null rw,
+  /proc/** r,
+  /sys/** r,
+
+  # Python
+  /usr/lib/python3*/** r,
+  /usr/lib/python3*/**.pyc w,
+
+  # rclone
+  /usr/bin/rclone ix,
+
+  # Tools
+  /usr/bin/tar ix,
+  /usr/bin/gzip ix,
+  /usr/bin/split ix,
+  /usr/bin/dd ix,
+  /usr/bin/nice ix,
+  /usr/bin/ionice ix,
+  /usr/bin/bc ix,
+  /usr/bin/curl ix,
+  /usr/bin/jq ix,
+  /usr/bin/df ix,
+  /usr/bin/du ix,
+  /usr/bin/tail ix,
+  /usr/bin/head ix,
+
+  # Network
+  network inet stream,
+  network inet dgram,
+  network inet6 stream,
+  network inet6 dgram,
+}
