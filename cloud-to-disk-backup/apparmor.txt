@@ -17,12 +17,12 @@ profile cloud-to-disk-backup flags=(attach_disconnected,mediate_deleted) {
   # S6 Overlay
   /init rix,
   /bin/** rix,
-  /usr/bin/** ix,
-  /usr/lib/** ix,
-  /usr/sbin/** ix,
-  /run/{s6,s6-rc*,service}/** ix,
-  /package/** ix,
-  /command/** ix,
+  /usr/bin/** rix,
+  /usr/lib/** rix,
+  /usr/sbin/** rix,
+  /run/{s6,s6-rc*,service}/** rwix,
+  /package/** rix,
+  /command/** rix,
   /etc/s6/** rix,
   /etc/s6-overlay/** rix,
   /etc/cont-init.d/** rix,
@@ -30,7 +30,7 @@ profile cloud-to-disk-backup flags=(attach_disconnected,mediate_deleted) {
   /etc/services.d/** rwix,
 
   # Bashio
-  /usr/lib/bashio/** ix,
+  /usr/lib/bashio/** rix,
   /tmp/** rwk,
 
   # Application
@@ -56,26 +56,26 @@ profile cloud-to-disk-backup flags=(attach_disconnected,mediate_deleted) {
   /sys/** r,
 
   # Python
-  /usr/lib/python3*/** r,
+  /usr/lib/python3*/** rix,
   /usr/lib/python3*/**.pyc w,
 
   # rclone
-  /usr/bin/rclone ix,
+  /usr/bin/rclone rix,
 
-  # Tools
-  /usr/bin/tar ix,
-  /usr/bin/gzip ix,
-  /usr/bin/split ix,
-  /usr/bin/dd ix,
-  /usr/bin/nice ix,
-  /usr/bin/ionice ix,
-  /usr/bin/bc ix,
-  /usr/bin/curl ix,
-  /usr/bin/jq ix,
-  /usr/bin/df ix,
-  /usr/bin/du ix,
-  /usr/bin/tail ix,
-  /usr/bin/head ix,
+  # Tools (covered by /usr/bin/** rix above but kept for clarity)
+  /usr/bin/tar rix,
+  /usr/bin/gzip rix,
+  /usr/bin/split rix,
+  /usr/bin/dd rix,
+  /usr/bin/nice rix,
+  /usr/bin/ionice rix,
+  /usr/bin/bc rix,
+  /usr/bin/curl rix,
+  /usr/bin/jq rix,
+  /usr/bin/df rix,
+  /usr/bin/du rix,
+  /usr/bin/tail rix,
+  /usr/bin/head rix,
 
   # Network
   network inet stream,
