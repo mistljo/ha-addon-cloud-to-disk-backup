@@ -248,6 +248,61 @@ def index():
 
 
 # =========================================================================
+# Routes: Browse paths (dynamic disk/folder discovery)
+# =========================================================================
+
+@app.route('/api/browse', methods=['GET'])
+def api_browse_paths():
+    """List directories under a given path (default: /media).
+
+    Query params:
+        path  – base directory to scan (default /media)
+        depth – how many levels deep (default 2, max 4)
+    Returns a flat list of directories with disk usage info.
+    """
+    base = request.args.get('path', '/media')
+    depth = min(int(request.args.get('depth', 2)), 4)
+
+    # Security: only allow browsing under /media, /share, /backup, /data
+    allowed = ('/media', '/share', '/backup', '/data')
+    real_base = os.path.realpath(base)
+    if not any(real_base.startswith(a) or real_base == a for a in allowed):
+        return jsonify({'error': 'Path not allowed'}), 403
+
+    entries = []
+    try:
+        result = subprocess.run(
+            ['find', base, '-maxdepth', str(depth), '-type', 'd'],
+            capture_output=True, text=True, timeout=5
+        )
+        dirs = [d.strip() for d in result.stdout.strip().split('\n')
+                if d.strip() and d.strip() != base]
+    except Exception:
+        dirs = []
+
+    # Add disk usage info for top-level mounts
+    for d in sorted(dirs):
+        entry = {'path': d, 'name': os.path.basename(d)}
+        # Get disk usage for top-level paths (direct children of /media)
+        rel_parts = os.path.relpath(d, base).split(os.sep)
+        if len(rel_parts) == 1:
+            # Top-level mount — include disk info
+            entry['is_mount'] = True
+            di = get_disk_info(d)
+            entry['total'] = di.get('total', '?')
+            entry['available'] = di.get('available', '?')
+            entry['percent'] = di.get('percent', '?')
+        else:
+            entry['is_mount'] = False
+        # Skip lost+found
+        if os.path.basename(d) == 'lost+found':
+            continue
+        entries.append(entry)
+
+    return jsonify({'base': base, 'entries': entries})
+
+
+# =========================================================================
 # Routes: Backup Jobs CRUD
 # =========================================================================
 

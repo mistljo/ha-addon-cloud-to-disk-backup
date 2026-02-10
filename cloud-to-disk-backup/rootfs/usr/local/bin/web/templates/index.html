@@ -313,7 +313,13 @@
                 </div>
                 <div class="form-group">
                     <label>Backup Destination Path *</label>
-                    <input type="text" id="jobPath" placeholder="/media/Backup_Disk/backups">
+                    <div style="display:flex; gap:8px;">
+                        <select id="jobPath" style="flex:1;">
+                            <option value="">-- Loading paths... --</option>
+                        </select>
+                        <button type="button" class="btn btn-small" onclick="refreshPaths()" title="Refresh">🔄</button>
+                    </div>
+                    <input type="text" id="jobPathCustom" placeholder="Or type a custom path, e.g., /media/MyDisk/backups" style="margin-top:4px;">
                 </div>
             </div>
             <div class="form-group">
@@ -556,7 +562,7 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
 
             if (tab === 'dashboard') refreshDashboard();
-            if (tab === 'jobs') { loadRemotesForSelect(); loadJobs(); }
+            if (tab === 'jobs') { loadRemotesForSelect(); loadPathsForSelect(); loadJobs(); }
             if (tab === 'remotes') { loadRemotes(); loadRcloneConfig(); updateProviderFields(); }
             if (tab === 'logs') loadLogList();
         }
@@ -698,12 +704,43 @@
             } catch (e) { console.error(e); }
         }
 
+        async function loadPathsForSelect() {
+            try {
+                const res = await fetch(api('/browse?depth=2'));
+                const data = await res.json();
+                const sel = document.getElementById('jobPath');
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">-- Select destination --</option>';
+                (data.entries || []).forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.path;
+                    if (e.is_mount) {
+                        opt.textContent = `💾 ${e.path}  (${e.available} free, ${e.percent} used)`;
+                    } else {
+                        opt.textContent = `   📁 ${e.path}`;
+                    }
+                    sel.appendChild(opt);
+                });
+                if (currentVal) sel.value = currentVal;
+            } catch (e) { console.error(e); }
+        }
+
+        function refreshPaths() {
+            loadPathsForSelect();
+            showToast('Paths refreshed');
+        }
+
         async function saveJob() {
+            // Custom path takes priority over dropdown
+            const customPath = document.getElementById('jobPathCustom').value.trim();
+            const selectPath = document.getElementById('jobPath').value;
+            const backupPath = customPath || selectPath;
+
             const data = {
                 name: document.getElementById('jobName').value.trim(),
                 cloud_provider: document.getElementById('jobProvider').value,
                 remote_name: document.getElementById('jobRemote').value,
-                backup_path: document.getElementById('jobPath').value.trim(),
+                backup_path: backupPath,
                 excludes: document.getElementById('jobExcludes').value
                     .split('\n').filter(s => s.trim()),
                 enabled: true
@@ -740,7 +777,16 @@
                 document.getElementById('jobName').value = job.name;
                 document.getElementById('jobProvider').value = job.cloud_provider;
                 document.getElementById('jobRemote').value = job.remote_name;
-                document.getElementById('jobPath').value = job.backup_path;
+                // Try to select in dropdown, otherwise put in custom field
+                const pathSel = document.getElementById('jobPath');
+                const pathCustom = document.getElementById('jobPathCustom');
+                pathSel.value = job.backup_path;
+                if (pathSel.value !== job.backup_path) {
+                    pathSel.value = '';
+                    pathCustom.value = job.backup_path;
+                } else {
+                    pathCustom.value = '';
+                }
                 document.getElementById('jobExcludes').value = (job.excludes || []).join('\n');
                 document.getElementById('cancelEditBtn').style.display = 'inline';
                 document.getElementById('jobFormTitle').textContent = '✏️ Edit Backup Job';
@@ -754,6 +800,7 @@
             document.getElementById('jobProvider').value = 'onedrive';
             document.getElementById('jobRemote').value = '';
             document.getElementById('jobPath').value = '';
+            document.getElementById('jobPathCustom').value = '';
             document.getElementById('jobExcludes').value = '';
             document.getElementById('cancelEditBtn').style.display = 'none';
             document.getElementById('jobFormTitle').textContent = '➕ Add Backup Job';
